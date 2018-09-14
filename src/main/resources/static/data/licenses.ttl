@@ -1,0 +1,535 @@
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix dc: <http://purl.org/dc/terms/> .
+@prefix dc11: <http://purl.org/dc/elements/1.1/> .
+@prefix skosxl: <http://www.w3.org/2008/05/skos-xl#> .
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+
+<http://dcat-ap.de/def/licenses>
+  a owl:Ontology, skos:ConceptScheme ;
+  owl:versionInfo "20180514" ;
+  owl:versionIRI <http://dcat-ap.de/def/licenses/20180514/> ;
+  rdfs:comment "Liste der Lizenzen, die im Feld dct:license einer DCAT-AP.de-konformen dcat:distribution für die Zulieferung an GovData erlaubt sind."^^rdfs:Literal ;
+  rdfs:label "Liste der Lizenzen"@de ;
+  skos:prefLabel "Liste der Lizenzen"@de ;
+  dc:identifier "http://www.dcat-ap.de/def/licenses" .
+
+<http://dcat-ap.de/def/licenses/apache>
+  a skos:Concept ;
+  dc11:identifier "apache" ;
+  skos:topConceptOf <http://dcat-ap.de/def/licenses> ;
+  skos:inScheme <http://dcat-ap.de/def/licenses> ;
+  skos:prefLabel "Freie Softwarelizenz der Apache Software Foundation"@de ;
+  skosxl:prefLabel [
+    a skosxl:Label ;
+    skosxl:literalForm "Freie Softwarelizenz der Apache Software Foundation"@de ;
+    rdfs:label "Freie Softwarelizenz der Apache Software Foundation"@de
+  ] ;
+  skos:exactMatch <http://dcat-ap.de/def/licenses/apache> ;
+  skos:altLabel "apache"@de ;
+  dc:references <http://www.apache.org/licenses> ;
+  foaf:homepage <http://www.apache.org/licenses> .
+
+<http://dcat-ap.de/def/licenses/bsd>
+  a skos:Concept ;
+  dc11:identifier "bsd" ;
+  skos:topConceptOf <http://dcat-ap.de/def/licenses> ;
+  skos:inScheme <http://dcat-ap.de/def/licenses> ;
+  skos:prefLabel "BSD Lizenz"@de ;
+  skosxl:prefLabel [
+    a skosxl:Label ;
+    skosxl:literalForm "BSD Lizenz"@de ;
+    rdfs:label "BSD Lizenz"@de
+  ] ;
+  skos:exactMatch <http://dcat-ap.de/def/licenses/bsd> ;
+  skos:altLabel "bsdlicense"@de ;
+  dc:references <http://www.opensource.org/licenses/bsd-license.php> ;
+  foaf:homepage <http://www.opensource.org/licenses/bsd-license.php> .
+
+<http://dcat-ap.de/def/licenses/cc-by>
+  a skos:Concept ;
+  dc11:identifier "cc-by" ;
+  skos:topConceptOf <http://dcat-ap.de/def/licenses> ;
+  skos:inScheme <http://dcat-ap.de/def/licenses> ;
+  skos:prefLabel "Creative Commons Namensnennung (CC-BY)"@de ;
+  skosxl:prefLabel [
+    a skosxl:Label ;
+    skosxl:literalForm "Creative Commons Namensnennung (CC-BY)"@de ;
+    rdfs:label "Creative Commons Namensnennung (CC-BY)"@de
+  ] ;
+  skos:exactMatch <http://dcat-ap.de/def/licenses/cc-by> ;
+  skos:altLabel "cc-by"@de ;
+  dc:references <http://www.opendefinition.org/licenses/cc-by> ;
+  foaf:homepage <http://www.opendefinition.org/licenses/cc-by> .
+
+<http://dcat-ap.de/def/licenses/cc-by/4.0>
+  a skos:Concept ;
+  dc11:identifier "cc-by/4.0" ;
+  skos:topConceptOf <http://dcat-ap.de/def/licenses> ;
+  skos:inScheme <http://dcat-ap.de/def/licenses> ;
+  skos:prefLabel "Creative Commons Namensnennung – 4.0 International (CC BY 4.0)"@de ;
+  skosxl:prefLabel [
+    a skosxl:Label ;
+    skosxl:literalForm "Creative Commons Namensnennung – 4.0 International (CC BY 4.0)"@de ;
+    rdfs:label "Creative Commons Namensnennung – 4.0 International (CC BY 4.0)"@de
+  ] ;
+  skos:exactMatch <http://dcat-ap.de/def/licenses/cc-by/4.0> ;
+  skos:altLabel "cc-by/4.0"@de ;
+  dc:references <http://creativecommons.org/licenses/by/4.0/> ;
+  foaf:homepage <http://creativecommons.org/licenses/by/4.0/> .
+
+<http://dcat-ap.de/def/licenses/cc-by-de/3.0>
+  a skos:Concept ;
+  dc11:identifier "cc-by-de/3.0" ;
+  skos:topConceptOf <http://dcat-ap.de/def/licenses> ;
+  skos:inScheme <http://dcat-ap.de/def/licenses> ;
+  skos:prefLabel "Creative Commons Namensnennung 3.0 Deutschland (CC BY 3.0 DE)"@de ;
+  skosxl:prefLabel [
+    a skosxl:Label ;
+    skosxl:literalForm "Creative Commons Namensnennung 3.0 Deutschland (CC BY 3.0 DE)"@de ;
+    rdfs:label "Creative Commons Namensnennung 3.0 Deutschland (CC BY 3.0 DE)"@de
+  ] ;
+  skos:exactMatch <http://dcat-ap.de/def/licenses/cc-by-de/3.0> ;
+  skos:altLabel "cc-by-de/3.0"@de ;
+  dc:references <https://creativecommons.org/licenses/by/3.0/de/> ;
+  foaf:homepage <https://creativecommons.org/licenses/by/3.0/de/> .
+
+<http://dcat-ap.de/def/licenses/cc-by-nc>
+  a skos:Concept ;
+  dc11:identifier "cc-by-nc" ;
+  skos:topConceptOf <http://dcat-ap.de/def/licenses> ;
+  skos:inScheme <http://dcat-ap.de/def/licenses> ;
+  skos:prefLabel "Creative Commons Namensnennung - Nicht kommerziell (CC BY-NC)"@de ;
+  skosxl:prefLabel [
+    a skosxl:Label ;
+    skosxl:literalForm "Creative Commons Namensnennung - Nicht kommerziell (CC BY-NC)"@de ;
+    rdfs:label "Creative Commons Namensnennung - Nicht kommerziell (CC BY-NC)"@de
+  ] ;
+  skos:exactMatch <http://dcat-ap.de/def/licenses/cc-by-nc> ;
+  skos:altLabel "cc-by-nc"@de ;
+  dc:references <http://creativecommons.org/licenses/by-nc/> ;
+  foaf:homepage <http://creativecommons.org/licenses/by-nc/> .
+
+<http://dcat-ap.de/def/licenses/cc-by-nc-de/3.0>
+  a skos:Concept ;
+  dc11:identifier "cc-by-nc-de/3.0" ;
+  skos:topConceptOf <http://dcat-ap.de/def/licenses> ;
+  skos:inScheme <http://dcat-ap.de/def/licenses> ;
+  skos:prefLabel "Creative Commons Namensnennung-Nicht kommerziell 3.0 Deutschland (CC BY-NC 3.0 DE)"@de ;
+  skosxl:prefLabel [
+    a skosxl:Label ;
+    skosxl:literalForm "Creative Commons Namensnennung-Nicht kommerziell 3.0 Deutschland (CC BY-NC 3.0 DE)"@de ;
+    rdfs:label "Creative Commons Namensnennung-Nicht kommerziell 3.0 Deutschland (CC BY-NC 3.0 DE)"@de
+  ] ;
+  skos:exactMatch <http://dcat-ap.de/def/licenses/cc-by-nc-de/3.0> ;
+  skos:altLabel "cc-by-nc/3.0"@de ;
+  dc:references <https://creativecommons.org/licenses/by-nc/3.0/de/> ;
+  foaf:homepage <https://creativecommons.org/licenses/by-nc/3.0/de/> .
+
+<http://dcat-ap.de/def/licenses/cc-by-nc/4.0>
+  a skos:Concept ;
+  dc11:identifier "cc-by-nc/4.0" ;
+  skos:topConceptOf <http://dcat-ap.de/def/licenses> ;
+  skos:inScheme <http://dcat-ap.de/def/licenses> ;
+  skos:prefLabel "Creative Commons Namensnennung - Nicht kommerziell 4.0 International (CC BY-NC 4.0)"@de ;
+  skosxl:prefLabel [
+    a skosxl:Label ;
+    skosxl:literalForm "Creative Commons Namensnennung - Nicht kommerziell 4.0 International (CC BY-NC 4.0)"@de ;
+    rdfs:label "Creative Commons Namensnennung - Nicht kommerziell 4.0 International (CC BY-NC 4.0)"@de
+  ] ;
+  skos:exactMatch <http://dcat-ap.de/def/licenses/cc-by-nc/4.0> ;
+  skos:altLabel "cc-by-nc/4.0"@de ;
+  dc:references <http://creativecommons.org/licenses/by-nc/4.0/> ;
+  foaf:homepage <http://creativecommons.org/licenses/by-nc/4.0/> .
+
+<http://dcat-ap.de/def/licenses/cc-by-nd>
+  a skos:Concept ;
+  dc11:identifier "cc-by-nd" ;
+  skos:topConceptOf <http://dcat-ap.de/def/licenses> ;
+  skos:inScheme <http://dcat-ap.de/def/licenses> ;
+  skos:prefLabel "Creative Commons Namensnennung - Keine Bearbeitung (CC BY-ND)"@de ;
+  skosxl:prefLabel [
+    a skosxl:Label ;
+    skosxl:literalForm "Creative Commons Namensnennung - Keine Bearbeitung (CC BY-ND)"@de ;
+    rdfs:label "Creative Commons Namensnennung - Keine Bearbeitung (CC BY-ND)"@de
+  ] ;
+  skos:exactMatch <http://dcat-ap.de/def/licenses/cc-by-nd> ;
+  skos:altLabel "cc-by-nd"@de ;
+  dc:references <http://creativecommons.org/licenses/by-nd/3.0/> ;
+  foaf:homepage <http://creativecommons.org/licenses/by-nd/3.0/> .
+
+<http://dcat-ap.de/def/licenses/cc-by-nd/3.0>
+  a skos:Concept ;
+  dc11:identifier "cc-by-nd/3.0" ;
+  skos:topConceptOf <http://dcat-ap.de/def/licenses> ;
+  skos:inScheme <http://dcat-ap.de/def/licenses> ;
+  skos:prefLabel "Creative Commons Namensnennung -- Keine Bearbeitung 3.0 Unported (CC BY-ND 3.0)"@de ;
+  skosxl:prefLabel [
+    a skosxl:Label ;
+    skosxl:literalForm "Creative Commons Namensnennung -- Keine Bearbeitung 3.0 Unported (CC BY-ND 3.0)"@de ;
+    rdfs:label "Creative Commons Namensnennung -- Keine Bearbeitung 3.0 Unported (CC BY-ND 3.0)"@de
+  ] ;
+  skos:exactMatch <http://dcat-ap.de/def/licenses/cc-by-nd/3.0> ;
+  skos:altLabel "cc-by-nd/3.0"@de ;
+  dc:references <http://creativecommons.org/licenses/by-nd/3.0/> ;
+  foaf:homepage <http://creativecommons.org/licenses/by-nd/3.0/> .
+
+<http://dcat-ap.de/def/licenses/cc-by-nd/4.0>
+  a skos:Concept ;
+  dc11:identifier "cc-by-nd/4.0" ;
+  skos:topConceptOf <http://dcat-ap.de/def/licenses> ;
+  skos:inScheme <http://dcat-ap.de/def/licenses> ;
+  skos:prefLabel "Creative Commons Namensnennung - - Keine Bearbeitung 4.0 International (CC BY-ND 4.0)"@de ;
+  skosxl:prefLabel [
+    a skosxl:Label ;
+    skosxl:literalForm "Creative Commons Namensnennung - - Keine Bearbeitung 4.0 International (CC BY-ND 4.0)"@de ;
+    rdfs:label "Creative Commons Namensnennung - - Keine Bearbeitung 4.0 International (CC BY-ND 4.0)"@de
+  ] ;
+  skos:exactMatch <http://dcat-ap.de/def/licenses/cc-by-nd/4.0> ;
+  skos:altLabel "cc-by-nd/4.0"@de ;
+  dc:references <https://creativecommons.org/licenses/by-nd/4.0/> ;
+  foaf:homepage <https://creativecommons.org/licenses/by-nd/4.0/> .
+
+<http://dcat-ap.de/def/licenses/cc-by-sa>
+  a skos:Concept ;
+  dc11:identifier "cc-by-sa" ;
+  skos:topConceptOf <http://dcat-ap.de/def/licenses> ;
+  skos:inScheme <http://dcat-ap.de/def/licenses> ;
+  skos:prefLabel "Creative Commons Namensnennung - Weitergabe unter gleichen Bedingungen (CC-BY-SA)"@de ;
+  skosxl:prefLabel [
+    a skosxl:Label ;
+    skosxl:literalForm "Creative Commons Namensnennung - Weitergabe unter gleichen Bedingungen (CC-BY-SA)"@de ;
+    rdfs:label "Creative Commons Namensnennung - Weitergabe unter gleichen Bedingungen (CC-BY-SA)"@de
+  ] ;
+  skos:exactMatch <http://dcat-ap.de/def/licenses/cc-by-sa> ;
+  skos:altLabel "cc-by-sa"@de ;
+  dc:references <http://www.opendefinition.org/licenses/cc-by-sa> ;
+  foaf:homepage <http://www.opendefinition.org/licenses/cc-by-sa> .
+
+<http://dcat-ap.de/def/licenses/cc-by-sa/4.0>
+  a skos:Concept ;
+  dc11:identifier "cc-by-sa/4.0" ;
+  skos:topConceptOf <http://dcat-ap.de/def/licenses> ;
+  skos:inScheme <http://dcat-ap.de/def/licenses> ;
+  skos:prefLabel "Creative Commons Namensnennung - Weitergabe unter gleichen Bedingungen 4.0 International (CC-BY-SA 4.0)"@de ;
+  skosxl:prefLabel [
+    a skosxl:Label ;
+    skosxl:literalForm "Creative Commons Namensnennung - Weitergabe unter gleichen Bedingungen 4.0 International (CC-BY-SA 4.0)"@de ;
+    rdfs:label "Creative Commons Namensnennung - Weitergabe unter gleichen Bedingungen 4.0 International (CC-BY-SA 4.0)"@de
+  ] ;
+  skos:exactMatch <http://dcat-ap.de/def/licenses/cc-by-sa/4.0> ;
+  skos:altLabel "cc-by-sa/4.0"@de ;
+  dc:references <http://creativecommons.org/licenses/by-sa/4.0/> ;
+  foaf:homepage <http://creativecommons.org/licenses/by-sa/4.0/> .
+
+<http://dcat-ap.de/def/licenses/ccpdm/1.0>
+  a skos:Concept ;
+  dc11:identifier "ccpdm/1.0" ;
+  skos:topConceptOf <http://dcat-ap.de/def/licenses> ;
+  skos:inScheme <http://dcat-ap.de/def/licenses> ;
+  skos:prefLabel "Public Domain Mark 1.0 (PDM)"@de ;
+  skosxl:prefLabel [
+    a skosxl:Label ;
+    skosxl:literalForm "Public Domain Mark 1.0 (PDM)"@de ;
+    rdfs:label "Public Domain Mark 1.0 (PDM)"@de
+  ] ;
+  skos:exactMatch <http://dcat-ap.de/def/licenses/ccpdm/1.0> ;
+  skos:altLabel "ccpdm/1.0"@de ;
+  dc:references <http://creativecommons.org/publicdomain/mark/1.0/> ;
+  foaf:homepage <http://creativecommons.org/publicdomain/mark/1.0/> .
+
+<http://dcat-ap.de/def/licenses/cc-zero>
+  a skos:Concept ;
+  dc11:identifier "cc-zero" ;
+  skos:topConceptOf <http://dcat-ap.de/def/licenses> ;
+  skos:inScheme <http://dcat-ap.de/def/licenses> ;
+  skos:prefLabel "Creative Commons CC Zero License (cc-zero)"@de ;
+  skosxl:prefLabel [
+    a skosxl:Label ;
+    skosxl:literalForm "Creative Commons CC Zero License (cc-zero)"@de ;
+    rdfs:label "Creative Commons CC Zero License (cc-zero)"@de
+  ] ;
+  skos:exactMatch <http://dcat-ap.de/def/licenses/cc-zero> ;
+  skos:altLabel "cc-zero"@de ;
+  dc:references <http://www.opendefinition.org/licenses/cc-zero> ;
+  foaf:homepage <http://www.opendefinition.org/licenses/cc-zero> .
+
+<http://dcat-ap.de/def/licenses/dl-by-de/1.0>
+  a skos:Concept ;
+  dc11:identifier "dl-by-de/1.0" ;
+  skos:topConceptOf <http://dcat-ap.de/def/licenses> ;
+  skos:inScheme <http://dcat-ap.de/def/licenses> ;
+  skos:prefLabel "Datenlizenz Deutschland Namensnennung 1.0"@de ;
+  skosxl:prefLabel [
+    a skosxl:Label ;
+    skosxl:literalForm "Datenlizenz Deutschland Namensnennung 1.0"@de ;
+    rdfs:label "Datenlizenz Deutschland Namensnennung 1.0"@de
+  ] ;
+  skos:exactMatch <http://dcat-ap.de/def/licenses/dl-by-de/1.0> ;
+  skos:altLabel "dl-by-de/1.0"@de ;
+  dc:references <https://www.govdata.de/dl-de/by-1-0> ;
+  foaf:homepage <https://www.govdata.de/dl-de/by-1-0> .
+
+<http://dcat-ap.de/def/licenses/dl-by-de/2.0>
+  a skos:Concept ;
+  dc11:identifier "dl-by-de/2.0" ;
+  skos:topConceptOf <http://dcat-ap.de/def/licenses> ;
+  skos:inScheme <http://dcat-ap.de/def/licenses> ;
+  skos:prefLabel "Datenlizenz Deutschland Namensnennung 2.0"@de ;
+  skosxl:prefLabel [
+    a skosxl:Label ;
+    skosxl:literalForm "Datenlizenz Deutschland Namensnennung 2.0"@de ;
+    rdfs:label "Datenlizenz Deutschland Namensnennung 2.0"@de
+  ] ;
+  skos:exactMatch <http://dcat-ap.de/def/licenses/dl-by-de/2.0> ;
+  skos:altLabel "dl-by-de/2.0"@de ;
+  dc:references <https://www.govdata.de/dl-de/by-2-0> ;
+  foaf:homepage <https://www.govdata.de/dl-de/by-2-0> .
+
+<http://dcat-ap.de/def/licenses/dl-by-nc-de/1.0>
+  a skos:Concept ;
+  dc11:identifier "dl-by-nc-de/1.0" ;
+  skos:topConceptOf <http://dcat-ap.de/def/licenses> ;
+  skos:inScheme <http://dcat-ap.de/def/licenses> ;
+  skos:prefLabel "Datenlizenz Deutschland Namensnennung nicht-kommerziell 1.0"@de ;
+  skosxl:prefLabel [
+    a skosxl:Label ;
+    skosxl:literalForm "Datenlizenz Deutschland Namensnennung nicht-kommerziell 1.0"@de ;
+    rdfs:label "Datenlizenz Deutschland Namensnennung nicht-kommerziell 1.0"@de
+  ] ;
+  skos:exactMatch <http://dcat-ap.de/def/licenses/dl-by-nc-de/1.0> ;
+  skos:altLabel "dl-by-nc-de/1.0"@de ;
+  dc:references <https://www.govdata.de/dl-de/by-nc-1-0> ;
+  foaf:homepage <https://www.govdata.de/dl-de/by-nc-1-0> .
+
+<http://dcat-ap.de/def/licenses/dl-zero-de/2.0>
+  a skos:Concept ;
+  dc11:identifier "dl-zero-de/2.0" ;
+  skos:topConceptOf <http://dcat-ap.de/def/licenses> ;
+  skos:inScheme <http://dcat-ap.de/def/licenses> ;
+  skos:prefLabel "Datenlizenz Deutschland – Zero – Version 2.0"@de ;
+  skosxl:prefLabel [
+    a skosxl:Label ;
+    skosxl:literalForm "Datenlizenz Deutschland – Zero – Version 2.0"@de ;
+    rdfs:label "Datenlizenz Deutschland – Zero – Version 2.0"@de
+  ] ;
+  skos:exactMatch <http://dcat-ap.de/def/licenses/dl-zero-de/2.0> ;
+  skos:altLabel "dl-zero-de/2.0"@de ;
+  dc:references <https://www.govdata.de/dl-de/zero-2-0> ;
+  foaf:homepage <https://www.govdata.de/dl-de/zero-2-0> .
+
+<http://dcat-ap.de/def/licenses/geonutz/20130319>
+  a skos:Concept ;
+  dc11:identifier "geonutz/20130319" ;
+  skos:topConceptOf <http://dcat-ap.de/def/licenses> ;
+  skos:inScheme <http://dcat-ap.de/def/licenses> ;
+  skos:prefLabel "Nutzungsbestimmungen für die Bereitstellung von Geodaten des Bundes"@de ;
+  skosxl:prefLabel [
+    a skosxl:Label ;
+    skosxl:literalForm "Nutzungsbestimmungen für die Bereitstellung von Geodaten des Bundes"@de ;
+    rdfs:label "Nutzungsbestimmungen für die Bereitstellung von Geodaten des Bundes"@de
+  ] ;
+  skos:exactMatch <http://dcat-ap.de/def/licenses/geonutz/20130319> ;
+  skos:altLabel "geoNutz/20130319"@de ;
+  dc:references <http://www.geodatenzentrum.de/docpdf/geonutzv.pdf> ;
+  foaf:homepage <http://www.geodatenzentrum.de/docpdf/geonutzv.pdf> .
+
+<http://dcat-ap.de/def/licenses/geoNutz/20131001>
+  a skos:Concept ;
+  dc11:identifier "geoNutz/20131001" ;
+  skos:topConceptOf <http://dcat-ap.de/def/licenses> ;
+  skos:inScheme <http://dcat-ap.de/def/licenses> ;
+  skos:prefLabel "Nutzungsbestimmungen für die Bereitstellung von Geodaten des Landes Berlin"@de ;
+  skosxl:prefLabel [
+    a skosxl:Label ;
+    skosxl:literalForm "Nutzungsbestimmungen für die Bereitstellung von Geodaten des Landes Berlin"@de ;
+    rdfs:label "Nutzungsbestimmungen für die Bereitstellung von Geodaten des Landes Berlin"@de
+  ] ;
+  skos:exactMatch <http://dcat-ap.de/def/licenses/geoNutz/20131001> ;
+  skos:altLabel "geoNutz/20131001"@de ;
+  dc:references <http://www.stadtentwicklung.berlin.de/geoinformation/download/nutzIII.pdf> ;
+  foaf:homepage <http://www.stadtentwicklung.berlin.de/geoinformation/download/nutzIII.pdf> .
+
+<http://dcat-ap.de/def/licenses/gfdl>
+  a skos:Concept ;
+  dc11:identifier "gfdl" ;
+  skos:topConceptOf <http://dcat-ap.de/def/licenses> ;
+  skos:inScheme <http://dcat-ap.de/def/licenses> ;
+  skos:prefLabel "GNU Free Documentation License (GFDL)"@de ;
+  skosxl:prefLabel [
+    a skosxl:Label ;
+    skosxl:literalForm "GNU Free Documentation License (GFDL)"@de ;
+    rdfs:label "GNU Free Documentation License (GFDL)"@de
+  ] ;
+  skos:exactMatch <http://dcat-ap.de/def/licenses/gfdl> ;
+  skos:altLabel "gfdl"@de ;
+  dc:references <http://www.opendefinition.org/licenses/gfdl> ;
+  foaf:homepage <http://www.opendefinition.org/licenses/gfdl> .
+
+<http://dcat-ap.de/def/licenses/gpl/3.0>
+  a skos:Concept ;
+  dc11:identifier "gpl/3.0" ;
+  skos:topConceptOf <http://dcat-ap.de/def/licenses> ;
+  skos:inScheme <http://dcat-ap.de/def/licenses> ;
+  skos:prefLabel "GNU General Public License version 3.0 (GPLv3)"@de ;
+  skosxl:prefLabel [
+    a skosxl:Label ;
+    skosxl:literalForm "GNU General Public License version 3.0 (GPLv3)"@de ;
+    rdfs:label "GNU General Public License version 3.0 (GPLv3)"@de
+  ] ;
+  skos:exactMatch <http://dcat-ap.de/def/licenses/gpl/3.0> ;
+  skos:altLabel "gpl/3.0"@de ;
+  dc:references <http://www.opensource.org/licenses/gpl-3.0.html> ;
+  foaf:homepage <http://www.opensource.org/licenses/gpl-3.0.html> .
+
+<http://dcat-ap.de/def/licenses/mozilla>
+  a skos:Concept ;
+  dc11:identifier "mozilla" ;
+  skos:topConceptOf <http://dcat-ap.de/def/licenses> ;
+  skos:inScheme <http://dcat-ap.de/def/licenses> ;
+  skos:prefLabel "Mozilla Public License 2.0 (MPL)"@de ;
+  skosxl:prefLabel [
+    a skosxl:Label ;
+    skosxl:literalForm "Mozilla Public License 2.0 (MPL)"@de ;
+    rdfs:label "Mozilla Public License 2.0 (MPL)"@de
+  ] ;
+  skos:exactMatch <http://dcat-ap.de/def/licenses/mozilla> ;
+  skos:altLabel "mozilla"@de ;
+  dc:references <http://www.mozilla.org/MPL> ;
+  foaf:homepage <http://www.mozilla.org/MPL> .
+
+<http://dcat-ap.de/def/licenses/odbl>
+  a skos:Concept ;
+  dc11:identifier "odbl" ;
+  skos:topConceptOf <http://dcat-ap.de/def/licenses> ;
+  skos:inScheme <http://dcat-ap.de/def/licenses> ;
+  skos:prefLabel "Open Data Commons Open Database License (ODbL)"@de ;
+  skosxl:prefLabel [
+    a skosxl:Label ;
+    skosxl:literalForm "Open Data Commons Open Database License (ODbL)"@de ;
+    rdfs:label "Open Data Commons Open Database License (ODbL)"@de
+  ] ;
+  skos:exactMatch <http://dcat-ap.de/def/licenses/odbl> ;
+  skos:altLabel "odbl"@de ;
+  dc:references <http://www.opendefinition.org/licenses/odc-odbl> ;
+  foaf:homepage <http://www.opendefinition.org/licenses/odc-odbl> .
+
+<http://dcat-ap.de/def/licenses/odby>
+  a skos:Concept ;
+  dc11:identifier "odby" ;
+  skos:topConceptOf <http://dcat-ap.de/def/licenses> ;
+  skos:inScheme <http://dcat-ap.de/def/licenses> ;
+  skos:prefLabel "Open Data Commons Attribution License (ODC-BY 1.0)"@de ;
+  skosxl:prefLabel [
+    a skosxl:Label ;
+    skosxl:literalForm "Open Data Commons Attribution License (ODC-BY 1.0)"@de ;
+    rdfs:label "Open Data Commons Attribution License (ODC-BY 1.0)"@de
+  ] ;
+  skos:exactMatch <http://dcat-ap.de/def/licenses/odby> ;
+  skos:altLabel "odby"@de ;
+  dc:references <http://www.opendefinition.org/licenses/odc-by> ;
+  foaf:homepage <http://www.opendefinition.org/licenses/odc-by> .
+
+<http://dcat-ap.de/def/licenses/odcpddl>
+  a skos:Concept ;
+  dc11:identifier "odcpddl" ;
+  skos:topConceptOf <http://dcat-ap.de/def/licenses> ;
+  skos:inScheme <http://dcat-ap.de/def/licenses> ;
+  skos:prefLabel "Open Data Commons Public Domain Dedication and Licence (ODC PDDL)"@de ;
+  skosxl:prefLabel [
+    a skosxl:Label ;
+    skosxl:literalForm "Open Data Commons Public Domain Dedication and Licence (ODC PDDL)"@de ;
+    rdfs:label "Open Data Commons Public Domain Dedication and Licence (ODC PDDL)"@de
+  ] ;
+  skos:exactMatch <http://dcat-ap.de/def/licenses/odcpddl> ;
+  skos:altLabel "odcpddl"@de ;
+  dc:references <http://www.opendefinition.org/licenses/odc-pddl> ;
+  foaf:homepage <http://www.opendefinition.org/licenses/odc-pddl> .
+
+<http://dcat-ap.de/def/licenses/officialWork>
+  a skos:Concept ;
+  dc11:identifier "officialWork" ;
+  skos:topConceptOf <http://dcat-ap.de/def/licenses> ;
+  skos:inScheme <http://dcat-ap.de/def/licenses> ;
+  skos:prefLabel "Amtliches Werk, lizenzfrei nach §5 Abs. 1 UrhG"@de ;
+  skosxl:prefLabel [
+    a skosxl:Label ;
+    skosxl:literalForm "Amtliches Werk, lizenzfrei nach §5 Abs. 1 UrhG"@de ;
+    rdfs:label "Amtliches Werk, lizenzfrei nach §5 Abs. 1 UrhG"@de
+  ] ;
+  skos:exactMatch <http://dcat-ap.de/def/licenses/officialWork> ;
+  skos:altLabel "officialWork"@de ;
+  dc:references <http://www.gesetze-im-internet.de/urhg/__5.html> ;
+  foaf:homepage <http://www.gesetze-im-internet.de/urhg/__5.html> .
+
+<http://dcat-ap.de/def/licenses/other-closed>
+  a skos:Concept ;
+  dc11:identifier "other-closed" ;
+  skos:topConceptOf <http://dcat-ap.de/def/licenses> ;
+  skos:inScheme <http://dcat-ap.de/def/licenses> ;
+  skos:prefLabel "Andere geschlossene Lizenz"@de ;
+  skosxl:prefLabel [
+    a skosxl:Label ;
+    skosxl:literalForm "Andere geschlossene Lizenz"@de ;
+    rdfs:label "Andere geschlossene Lizenz"@de
+  ] ;
+  skos:exactMatch <http://dcat-ap.de/def/licenses/other-closed> ;
+  skos:altLabel "other-closed"@de .
+
+<http://dcat-ap.de/def/licenses/other-commercial>
+  a skos:Concept ;
+  dc11:identifier "other-commercial" ;
+  skos:topConceptOf <http://dcat-ap.de/def/licenses> ;
+  skos:inScheme <http://dcat-ap.de/def/licenses> ;
+  skos:prefLabel "Andere kommerzielle Lizenz"@de ;
+  skosxl:prefLabel [
+    a skosxl:Label ;
+    skosxl:literalForm "Andere kommerzielle Lizenz"@de ;
+    rdfs:label "Andere kommerzielle Lizenz"@de
+  ] ;
+  skos:exactMatch <http://dcat-ap.de/def/licenses/other-commercial> ;
+  skos:altLabel "other-commercial"@de .
+
+<http://dcat-ap.de/def/licenses/other-freeware>
+  a skos:Concept ;
+  dc11:identifier "other-freeware" ;
+  skos:topConceptOf <http://dcat-ap.de/def/licenses> ;
+  skos:inScheme <http://dcat-ap.de/def/licenses> ;
+  skos:prefLabel "Andere Freeware Lizenz"@de ;
+  skosxl:prefLabel [
+    a skosxl:Label ;
+    skosxl:literalForm "Andere Freeware Lizenz"@de ;
+    rdfs:label "Andere Freeware Lizenz"@de
+  ] ;
+  skos:exactMatch <http://dcat-ap.de/def/licenses/other-freeware> ;
+  skos:altLabel "other-freeware"@de .
+
+<http://dcat-ap.de/def/licenses/other-open>
+  a skos:Concept ;
+  dc11:identifier "other-open" ;
+  skos:topConceptOf <http://dcat-ap.de/def/licenses> ;
+  skos:inScheme <http://dcat-ap.de/def/licenses> ;
+  skos:prefLabel "Andere offene Lizenz"@de ;
+  skosxl:prefLabel [
+    a skosxl:Label ;
+    skosxl:literalForm "Andere offene Lizenz"@de ;
+    rdfs:label "Andere offene Lizenz"@de
+  ] ;
+  skos:exactMatch <http://dcat-ap.de/def/licenses/other-open> ;
+  skos:altLabel "other-open"@de .
+
+<http://dcat-ap.de/def/licenses/other-opensource>
+  a skos:Concept ;
+  dc11:identifier "other-opensource" ;
+  skos:topConceptOf <http://dcat-ap.de/def/licenses> ;
+  skos:inScheme <http://dcat-ap.de/def/licenses> ;
+  skos:prefLabel "Andere Open Source Lizenz"@de ;
+  skosxl:prefLabel [
+    a skosxl:Label ;
+    skosxl:literalForm "Andere Open Source Lizenz"@de ;
+    rdfs:label "Andere Open Source Lizenz"@de
+  ] ;
+  skos:exactMatch <http://dcat-ap.de/def/licenses/other-opensource> ;
+  skos:altLabel "other-opensource"@de .
+

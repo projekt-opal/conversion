@@ -1,10 +1,13 @@
 package org.aksw.conversiontool.converter;
 
+import org.apache.jena.rdf.model.Resource;
+import org.apache.jena.vocabulary.*;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
@@ -15,26 +18,47 @@ public class HtmlToRdf {
 
     private static final Logger logger = LoggerFactory.getLogger(HtmlToRdf.class);
 
-    private static String[] cssSelectors = new String[]{
-            "#portlet_mcloudsearchportlet > div > div > div > div.content-page.datail-page > div.row > div.small-24.xlarge-18.columns > div > h3\n",
-            "#portlet_mcloudsearchportlet > div > div > div > div.content-page.datail-page > div.row > div.small-24.xlarge-18.columns > div > p\n",
-            "#portlet_mcloudsearchportlet > div > div > div > div.content-page.datail-page > div.row > div.small-24.xlarge-18.columns > div > div > div > div > div.small-20.columns > a > span.link-download\n",
-            "#portlet_mcloudsearchportlet > div > div > div > div.content-page.datail-page > div.row > div.small-24.xlarge-18.columns > div > div > div > div > div.small-4.columns > span\n",
-            "#portlet_mcloudsearchportlet > div > div > div > div.content-page.datail-page > div.row > div.small-24.xlarge-6.columns > div > p:nth-child(2) > span > a\n",
-            "#portlet_mcloudsearchportlet > div > div > div > div.content-page.datail-page > div.row > div.small-24.xlarge-6.columns > div > div > span.tag-theme-text\n",
-            "#portlet_mcloudsearchportlet > div > div > div > div.content-page.datail-page > div.row > div.small-24.xlarge-6.columns > div > p:nth-child(6) > span\n",
-            "#portlet_mcloudsearchportlet > div > div > div > div.content-page.datail-page > div.row > div.small-24.xlarge-6.columns > div > p:nth-child(8) > span\n",
-            "#portlet_mcloudsearchportlet > div > div > div > div.content-page.datail-page > div.row > div.small-24.xlarge-6.columns > div > p:nth-child(10) > span:nth-child(2)\n",
-            "#portlet_mcloudsearchportlet > div > div > div > div.content-page.datail-page > div.row > div.small-24.xlarge-6.columns > div > p:nth-child(12) > a"
+    private final LicenseUtility licenseUtility;
+
+    @Autowired
+    public HtmlToRdf(LicenseUtility licenseUtility) {
+        this.licenseUtility = licenseUtility;
+    }
+
+    private static Record[] records = new Record[]{
+            new Record("#portlet_mcloudsearchportlet > div > div > div > div.content-page.datail-page > div.row > div.small-24.xlarge-18.columns > div > h3"
+                    ,DCTerms.title),
+            new Record("#portlet_mcloudsearchportlet > div > div > div > div.content-page.datail-page > div.row > div.small-24.xlarge-18.columns > div > p"
+                    ,DCTerms.description),
+            new Record("#portlet_mcloudsearchportlet > div > div > div > div.content-page.datail-page > div.row > div.small-24.xlarge-18.columns > div > div > div > div > div.small-20.columns > a > span.link-download"
+                    ,DCAT.downloadURL),
+            new Record("#portlet_mcloudsearchportlet > div > div > div > div.content-page.datail-page > div.row > div.small-24.xlarge-18.columns > div > div > div > div > div.small-4.columns > span"
+                    ,DC_10.format), //todo DCTems.format also exist
+            new Record("#portlet_mcloudsearchportlet > div > div > div > div.content-page.datail-page > div.row > div.small-24.xlarge-6.columns > div > p:nth-child(2) > span > a"
+                    ,DCTerms.publisher),
+            new Record("#portlet_mcloudsearchportlet > div > div > div > div.content-page.datail-page > div.row > div.small-24.xlarge-6.columns > div > div > span.tag-theme-text"
+                    ,DCAT.theme),
+            new Record("#portlet_mcloudsearchportlet > div > div > div > div.content-page.datail-page > div.row > div.small-24.xlarge-6.columns > div > p:nth-child(6) > span"
+                    , DCTerms.temporal),
+            new Record("#portlet_mcloudsearchportlet > div > div > div > div.content-page.datail-page > div.row > div.small-24.xlarge-6.columns > div > p:nth-child(8) > span"
+                    ,DCTerms.modified), // TODO: 14.09.18 Modification is for distribution not the metaData
+            new Record("#portlet_mcloudsearchportlet > div > div > div > div.content-page.datail-page > div.row > div.small-24.xlarge-6.columns > div > p:nth-child(10) > span:nth-child(2)"
+                    , RDFS.label),
+            new Record("#portlet_mcloudsearchportlet > div > div > div > div.content-page.datail-page > div.row > div.small-24.xlarge-6.columns > div > p:nth-child(12) > a",
+                    DCTerms.license)
     };
 
-    public void convert(File file) {
+    public void convert(File file, String subject) {
         try {
             Document document = Jsoup.parse(new Scanner(file).useDelimiter("\\A").next());
-            for(String cssQuery : cssSelectors) {
-                Elements elements = document
-                        .select(cssQuery);
-                logger.info("Elements \n{}", elements);
+            for(Record record : records) {
+                Elements elements = document.select(record.getSelector());
+                if(record.getProperty().equals(DCTerms.license)) {
+                    String href = elements.first().attr("href");
+                    Resource license = licenseUtility.getLicense(href);
+                    System.out.println(subject + "," + DCTerms.license + "," + license );// TODO: 14.09.18 In Some cases license is NULL
+                } else
+                    System.out.println(subject + "," + record.getProperty() + "," + elements);
             }
         } catch (Exception ex) {
             logger.error("Error {}", ex);

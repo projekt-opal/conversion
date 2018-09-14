@@ -26,7 +26,7 @@ public class ConversionToolApplication implements CommandLineRunner {
             String[] names = new String[]{"133","209","245","292","378","49","600","606","84"};
             for(String x: names) {
                 File file = new ClassPathResource(String.format("static/data/%s/Suche - mCLOUD.html", x)).getFile();
-                htmlToRdf.convert(file);
+                htmlToRdf.convert(file, String.format("opal:ds_%s",x));
             }
         } catch (IOException e) {
             e.printStackTrace();
