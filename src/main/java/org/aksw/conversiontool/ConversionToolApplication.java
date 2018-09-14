@@ -1,12 +1,16 @@
 package org.aksw.conversiontool;
 
 import org.aksw.conversiontool.converter.HtmlToRdf;
+import org.aksw.conversiontool.converter.MCloud;
+import org.aksw.conversiontool.converter.MCloudConfig;
+import org.aksw.conversiontool.converter.MCloudService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.core.io.ClassPathResource;
 
+import javax.annotation.PostConstruct;
 import java.io.File;
 import java.io.IOException;
 
@@ -20,6 +24,9 @@ public class ConversionToolApplication implements CommandLineRunner {
     @Autowired
     private HtmlToRdf htmlToRdf;
 
+    @Autowired
+    private MCloudService mCloudService;
+
     @Override
     public void run(String... args) {
         try {
@@ -31,5 +38,15 @@ public class ConversionToolApplication implements CommandLineRunner {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    @PostConstruct
+    public void initialDB() {
+        mCloudService.save(new MCloudConfig("Klima und Wetter", MCloud.climateAndWeather.getURI()));
+        mCloudService.save(new MCloudConfig("Bahn", MCloud.bahn.getURI()));
+        mCloudService.save(new MCloudConfig("Straßen", MCloud.street.getURI()));
+        mCloudService.save(new MCloudConfig("Wasserstraßen und Gewässer", MCloud.waterwaysAndWaters.getURI()));
+        mCloudService.save(new MCloudConfig("Luft- und Raumfahrt", MCloud.aerospace.getURI()));
+        mCloudService.save(new MCloudConfig("Infrastruktur", MCloud.infrastructure.getURI()));
     }
 }
