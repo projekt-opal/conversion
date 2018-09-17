@@ -15,14 +15,14 @@ public class MCloud {
     public static final Resource NAMESPACE = m_model.createResource( NS );
 
     /** <p>A summary of the resource.</p> */
-    public static final Property climateAndWeather = m_model.createProperty( "http://mcloud.de/climateAndWeather" );
-    public static final Property bahn = m_model.createProperty( "http://mcloud.de/bahn" );
-    public static final Property street = m_model.createProperty( "http://mcloud.de/street" );
-    public static final Property waterwaysAndWaters = m_model.createProperty( "http://mcloud.de/waterwaysAndWaters" );
-    public static final Property aerospace = m_model.createProperty( "http://mcloud.de/aerospace" );
-    public static final Property infrastructure = m_model.createProperty( "http://mcloud.de/infrastructure" );
+    public static final Resource climateAndWeather = m_model.createResource( "http://mcloud.de/climateAndWeather" );
+    public static final Resource bahn = m_model.createResource( "http://mcloud.de/bahn" );
+    public static final Resource street = m_model.createResource( "http://mcloud.de/street" );
+    public static final Resource waterwaysAndWaters = m_model.createResource( "http://mcloud.de/waterwaysAndWaters" );
+    public static final Resource aerospace = m_model.createResource( "http://mcloud.de/aerospace" );
+    public static final Resource infrastructure = m_model.createResource( "http://mcloud.de/infrastructure" );
 
-    public static Property getPropertyOfUri(String uri) {
+    public static Resource getResourceOfUri(String uri) {
         switch (uri) {
             case "http://mcloud.de/climateAndWeather": return climateAndWeather;
             case "http://mcloud.de/bahn": return bahn;

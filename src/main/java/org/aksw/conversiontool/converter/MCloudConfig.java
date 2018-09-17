@@ -15,14 +15,14 @@ public class MCloudConfig {
     private String key;
 
     @Column
-    private String propertyUri;
+    private String resourceUri;
 
     public MCloudConfig() {
     }
 
-    public MCloudConfig(String key, String propertyUri) {
+    public MCloudConfig(String key, String resourceUri) {
         this.key = key;
-        this.propertyUri = propertyUri;
+        this.resourceUri = resourceUri;
     }
 
     public Long getId() {
@@ -43,12 +43,12 @@ public class MCloudConfig {
         return this;
     }
 
-    public String getPropertyUri() {
-        return propertyUri;
+    public String getResourceUri() {
+        return resourceUri;
     }
 
-    public MCloudConfig setResource(String property) {
-        this.propertyUri = property;
+    public MCloudConfig setResource(String resourceUri) {
+        this.resourceUri = resourceUri;
         return this;
     }
 }

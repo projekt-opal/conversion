@@ -1,6 +1,5 @@
 package org.aksw.conversiontool.converter;
 
-import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.vocabulary.*;
 import org.jsoup.Jsoup;
@@ -62,15 +61,15 @@ public class HtmlToRdf {
                     Resource license = licenseUtility.getLicense(href);
                     System.out.println(subject + "," + DCTerms.license + "," + license );// TODO: 14.09.18 In Some cases license is NULL
                 } else if(record.getProperty().equals(DCAT.theme)) {
-                    Property property = null;
+                    Resource resource = null;
                     try {
                         String s = elements.first().text();
                         MCloudConfig mCloudConfig = mCloudService.findByKey(s);
-                        property = MCloud.getPropertyOfUri(mCloudConfig.getPropertyUri());
+                        resource = MCloud.getResourceOfUri(mCloudConfig.getResourceUri());
                     } catch (Exception e) {
                         logger.error("Error {}", e);
                     }
-                    System.out.println(subject + "," + property + "," + elements);
+                    System.out.println(subject + "," + DCAT.theme + "," + resource);
                 } else
                     System.out.println(subject + "," + record.getProperty() + "," + elements);
             }
