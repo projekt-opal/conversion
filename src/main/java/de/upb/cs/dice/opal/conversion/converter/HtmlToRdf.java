@@ -4,6 +4,7 @@ import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.vocabulary.*;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,12 +21,14 @@ public class HtmlToRdf {
 
     private final LicenseUtility licenseUtility;
     private final MCloudService mCloudService;
+    private AgentUtility agentUtility;
 
 
     @Autowired
-    public HtmlToRdf(LicenseUtility licenseUtility, MCloudService mCloudService) {
+    public HtmlToRdf(LicenseUtility licenseUtility, MCloudService mCloudService, AgentUtility agentUtility) {
         this.licenseUtility = licenseUtility;
         this.mCloudService = mCloudService;
+        this.agentUtility = agentUtility;
     }
 
     private static Record[] records = new Record[]{
@@ -45,8 +48,8 @@ public class HtmlToRdf {
                     , DCTerms.temporal),
             new Record("#portlet_mcloudsearchportlet > div > div > div > div.content-page.datail-page > div.row > div.small-24.xlarge-6.columns > div > p:nth-child(8) > span"
                     ,DCTerms.modified), // TODO: 14.09.18 Modification is for distribution not the metaData
-            new Record("#portlet_mcloudsearchportlet > div > div > div > div.content-page.datail-page > div.row > div.small-24.xlarge-6.columns > div > p:nth-child(10) > span:nth-child(2)"
-                    , RDFS.label),
+//            new Record("#portlet_mcloudsearchportlet > div > div > div > div.content-page.datail-page > div.row > div.small-24.xlarge-6.columns > div > p:nth-child(10) > span:nth-child(2)"
+//                    , RDFS.label), This data is been removed because it does not have a clear definition
             new Record("#portlet_mcloudsearchportlet > div > div > div > div.content-page.datail-page > div.row > div.small-24.xlarge-6.columns > div > p:nth-child(12) > a",
                     DCTerms.license)
     };
@@ -70,7 +73,18 @@ public class HtmlToRdf {
                         logger.error("Error {}", e);
                     }
                     System.out.println(subject + "," + DCAT.theme + "," + resource);
-                } else
+                } else if (record.getProperty().equals(DCTerms.publisher)) {
+                    Resource agent = null;
+                    try {
+                        Element element = elements.first();
+                        String href = element.attr("href");
+                        String name = element.text();
+                        agent = agentUtility.getAgent(href, name, "de");
+                    } catch (Exception e) {
+                        logger.error("Error {}", e);
+                    }
+                    System.out.println(subject + "," + DCTerms.publisher + "," + agent);
+                }else
                     System.out.println(subject + "," + record.getProperty() + "," + elements.text());
             }
         } catch (Exception ex) {
