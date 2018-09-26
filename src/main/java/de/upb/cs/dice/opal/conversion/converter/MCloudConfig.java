@@ -1,4 +1,4 @@
-package org.aksw.conversiontool.converter;
+package de.upb.cs.dice.opal.conversion.converter;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;

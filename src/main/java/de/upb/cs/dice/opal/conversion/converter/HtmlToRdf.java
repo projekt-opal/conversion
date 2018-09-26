@@ -1,4 +1,4 @@
-package org.aksw.conversiontool.converter;
+package de.upb.cs.dice.opal.conversion.converter;
 
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.vocabulary.*;
@@ -71,7 +71,7 @@ public class HtmlToRdf {
                     }
                     System.out.println(subject + "," + DCAT.theme + "," + resource);
                 } else
-                    System.out.println(subject + "," + record.getProperty() + "," + elements);
+                    System.out.println(subject + "," + record.getProperty() + "," + elements.text());
             }
         } catch (Exception ex) {
             logger.error("Error {}", ex);

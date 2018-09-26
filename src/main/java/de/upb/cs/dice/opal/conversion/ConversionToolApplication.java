@@ -1,9 +1,9 @@
-package org.aksw.conversiontool;
+package de.upb.cs.dice.opal.conversion;
 
-import org.aksw.conversiontool.converter.HtmlToRdf;
-import org.aksw.conversiontool.converter.MCloud;
-import org.aksw.conversiontool.converter.MCloudConfig;
-import org.aksw.conversiontool.converter.MCloudService;
+import de.upb.cs.dice.opal.conversion.converter.HtmlToRdf;
+import de.upb.cs.dice.opal.conversion.converter.MCloud;
+import de.upb.cs.dice.opal.conversion.converter.MCloudConfig;
+import de.upb.cs.dice.opal.conversion.converter.MCloudService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;

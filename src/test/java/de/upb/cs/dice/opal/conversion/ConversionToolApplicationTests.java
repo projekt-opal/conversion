@@ -1,4 +1,4 @@
-package org.aksw.conversiontool;
+package de.upb.cs.dice.opal.conversion;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;

@@ -1,4 +1,4 @@
-package org.aksw.conversiontool.converter;
+package de.upb.cs.dice.opal.conversion.converter;
 
 import org.apache.jena.rdf.model.*;
 import org.apache.jena.riot.RDFDataMgr;
