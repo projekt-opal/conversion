@@ -37,7 +37,7 @@ public class AgentUtility {
         if (resIterator.hasNext())
             return resIterator.nextResource();
 
-        Resource agent = ResourceFactory.createResource("http://agent.projekt-opal.de/def/agents/agent_" + cnt++);
+        Resource agent = ResourceFactory.createResource("http://agent.projekt-opal.de/agent_" + cnt++);
         model.add(agent, RDF.type, FOAF.Agent)
             .add(agent, FOAF.homepage, agentUrl)
             .add(agent, FOAF.name, ResourceFactory.createLangLiteral(name, languageTag));

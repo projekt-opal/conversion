@@ -1,5 +1,8 @@
 package de.upb.cs.dice.opal.conversion.converter;
 
+import org.apache.jena.datatypes.RDFDatatype;
+import org.apache.jena.datatypes.xsd.XSDDatatype;
+import org.apache.jena.rdf.model.Literal;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.rdf.model.ResourceFactory;
 import org.apache.jena.vocabulary.*;
@@ -43,7 +46,7 @@ public class HtmlToRdf {
             new Record("#portlet_mcloudsearchportlet > div > div > div > div.content-page.datail-page > div.row > div.small-24.xlarge-18.columns > div > div > div > div > div.small-20.columns > a > span.link-download"
                     , DCAT.downloadURL),
             new Record("#portlet_mcloudsearchportlet > div > div > div > div.content-page.datail-page > div.row > div.small-24.xlarge-18.columns > div > div > div > div > div.small-4.columns > span"
-                    , DC_10.format), //todo DCTems.format also exist
+                    , DC_10.format), //todo DCTerms.format also exist
             new Record("#portlet_mcloudsearchportlet > div > div > div > div.content-page.datail-page > div.row > div.small-24.xlarge-6.columns > div > p:nth-child(2) > span > a"
                     , DCTerms.publisher),
             new Record("#portlet_mcloudsearchportlet > div > div > div > div.content-page.datail-page > div.row > div.small-24.xlarge-6.columns > div > div > span.tag-theme-text"
@@ -96,7 +99,15 @@ public class HtmlToRdf {
                         logger.error("Error {}", e);
                     }
                     System.out.println(subject + "," + DCTerms.publisher + "," + agent);
-                } else
+                } else if(record.getProperty().equals(DCTerms.temporal)) {
+                    String text = elements.first().text();
+                    Literal temporal = ResourceFactory.createTypedLiteral(text, XSDDatatype.XSDdateTime);
+                    System.out.println(subject + "," + DCTerms.temporal + "," + temporal);
+                } else if (record.getProperty().equals(DCTerms.modified)) {
+                    String text = elements.first().text();
+                    Literal modified = ResourceFactory.createTypedLiteral(text, XSDDatatype.XSDdateTime);
+                    System.out.println(subject + "," + DCTerms.modified + "," + modified);
+                }else
                     System.out.println(subject + "," + record.getProperty() + "," + elements.text());
             }
         } catch (Exception ex) {

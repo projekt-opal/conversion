@@ -45,10 +45,10 @@ public class LicenseUtility {
             }
         }
 
-        Resource newLicense = ResourceFactory.createResource("http://projekt-opal.de/def/licenses/license_" + cnt++);
+        Resource newLicense = ResourceFactory.createResource("http://license.projekt-opal.de/license_" + cnt++);
         models.get(models.size() - 1).add(newLicense, RDF.type, SKOS.Concept)
-                .add(newLicense, SKOS.topConceptOf, ResourceFactory.createResource("http://projekt-opal.de/def/licenses"))
-                .add(newLicense, SKOS.inScheme, ResourceFactory.createResource("http://projekt-opal.de/def/licenses"))
+                .add(newLicense, SKOS.topConceptOf, ResourceFactory.createResource("http://license.projekt-opal.de/"))
+                .add(newLicense, SKOS.inScheme, ResourceFactory.createResource("http://license.projekt-opal.de/"))
                 .add(newLicense, DCTerms.references, license)
                 .add(newLicense, FOAF.homepage, license);
 
