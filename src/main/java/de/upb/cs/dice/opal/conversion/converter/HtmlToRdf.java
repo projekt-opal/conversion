@@ -1,11 +1,12 @@
 package de.upb.cs.dice.opal.conversion.converter;
 
-import org.apache.jena.datatypes.RDFDatatype;
 import org.apache.jena.datatypes.xsd.XSDDatatype;
 import org.apache.jena.rdf.model.Literal;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.rdf.model.ResourceFactory;
-import org.apache.jena.vocabulary.*;
+import org.apache.jena.vocabulary.DCAT;
+import org.apache.jena.vocabulary.DCTerms;
+import org.apache.jena.vocabulary.DC_10;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -29,13 +30,15 @@ public class HtmlToRdf {
     private final LicenseUtility licenseUtility;
     private final MCloudService mCloudService;
     private AgentUtility agentUtility;
+    private DistributionUtility distributionUtility;
 
 
     @Autowired
-    public HtmlToRdf(LicenseUtility licenseUtility, MCloudService mCloudService, AgentUtility agentUtility) {
+    public HtmlToRdf(LicenseUtility licenseUtility, MCloudService mCloudService, AgentUtility agentUtility, DistributionUtility distributionUtility) {
         this.licenseUtility = licenseUtility;
         this.mCloudService = mCloudService;
         this.agentUtility = agentUtility;
+        this.distributionUtility = distributionUtility;
     }
 
     private static Record[] records = new Record[]{
@@ -44,7 +47,7 @@ public class HtmlToRdf {
             new Record("#portlet_mcloudsearchportlet > div > div > div > div.content-page.datail-page > div.row > div.small-24.xlarge-18.columns > div > p"
                     , DCTerms.description),
             new Record("#portlet_mcloudsearchportlet > div > div > div > div.content-page.datail-page > div.row > div.small-24.xlarge-18.columns > div > div > div > div > div.small-20.columns > a > span.link-download"
-                    , DCAT.downloadURL),
+                    , DCAT.distribution),
             new Record("#portlet_mcloudsearchportlet > div > div > div > div.content-page.datail-page > div.row > div.small-24.xlarge-18.columns > div > div > div > div > div.small-4.columns > span"
                     , DC_10.format), //todo DCTerms.format also exist
             new Record("#portlet_mcloudsearchportlet > div > div > div > div.content-page.datail-page > div.row > div.small-24.xlarge-6.columns > div > p:nth-child(2) > span > a"
@@ -99,7 +102,7 @@ public class HtmlToRdf {
                         logger.error("Error {}", e);
                     }
                     System.out.println(subject + "," + DCTerms.publisher + "," + agent);
-                } else if(record.getProperty().equals(DCTerms.temporal)) {
+                } else if (record.getProperty().equals(DCTerms.temporal)) {
                     String text = elements.first().text();
                     Literal temporal = ResourceFactory.createTypedLiteral(text, XSDDatatype.XSDdateTime);
                     System.out.println(subject + "," + DCTerms.temporal + "," + temporal);
@@ -107,7 +110,11 @@ public class HtmlToRdf {
                     String text = elements.first().text();
                     Literal modified = ResourceFactory.createTypedLiteral(text, XSDDatatype.XSDdateTime);
                     System.out.println(subject + "," + DCTerms.modified + "," + modified);
-                }else
+                } else if (record.getProperty().equals(DCAT.distribution)) {
+                    String url = elements.first().text();
+                    Resource distribution = distributionUtility.getDistribution(url);
+                    System.out.println(subject + "," + DCAT.distribution + "," + distribution);
+                } else
                     System.out.println(subject + "," + record.getProperty() + "," + elements.text());
             }
         } catch (Exception ex) {
