@@ -20,20 +20,47 @@ public class Converter {
     private static final Logger logger = LoggerFactory.getLogger(Converter.class);
 
     public void convert(Model model) {
-
-        ResIterator resIterator = model.listResourcesWithProperty(RDF.type, DCAT.Dataset);
-        if (resIterator.hasNext()) {
-            Resource dataSet = resIterator.nextResource();
-            makeOpalConfirmedUri(model, dataSet, DCAT.Dataset, null, "dataset");
-            makeOpalConfirmedUri(model, dataSet, DCAT.Distribution, DCAT.distribution, "distribution");
-        }
-
         try {
+
+            ResIterator resIterator = model.listResourcesWithProperty(RDF.type, DCAT.Dataset);
+            if (resIterator.hasNext()) {
+                Resource dataSet = resIterator.nextResource();
+                String portal = getPortal(dataSet, model);
+                makeOpalConfirmedUri(model, dataSet, DCAT.Dataset, null, "dataset");
+                makeOpalConfirmedUri(model, dataSet, DCAT.Distribution, DCAT.distribution, "distribution");
+                ResIterator opalConfirmedIterator = model.listResourcesWithProperty(RDF.type, DCAT.Dataset);
+                Resource dataSetOpalConfirmed = opalConfirmedIterator.nextResource();// TODO: 07.12.18 Check for Exception (".nextResource()")
+                addDatasetToCatalog(dataSetOpalConfirmed, portal, model);
+            }
+
             model.write(new FileOutputStream("/home/afshin/files/opal.ttl", true));
         } catch (Exception e) {
             logger.error("An error occured in saving th model, {}", e);
         }
 
+    }
+
+    private void addDatasetToCatalog(Resource dataSet, String portal, Model model) {
+
+        String baseUriCatalog = "http://projekt-opal.de/catalog/" + portal.replace('.', '_'); // TODO: 07.12.18 Make URL static final
+
+        model.add(ResourceFactory.createResource(baseUriCatalog), RDF.type, DCAT.Catalog);
+        model.add(ResourceFactory.createResource(baseUriCatalog), DCAT.dataset, dataSet);
+    }
+
+    private String getPortal(Resource dataSet, Model model) {
+
+        StmtIterator stmtIterator = model.listStatements(dataSet, ResourceFactory.createProperty("http://www.w3.org/ns/dcat#catalog"), (RDFNode) null);
+        if (stmtIterator.hasNext()) {
+            Statement statement = stmtIterator.nextStatement();
+            String portal = statement.getObject().asLiteral().getString();
+            stmtIterator = model.listStatements(dataSet, ResourceFactory.createProperty("http://www.w3.org/ns/dcat#catalog"), (RDFNode) null);
+            model.remove(stmtIterator);
+            return portal;
+        } else {
+            return "govdata.de"; // TODO: 07.12.18 In the future query TS from Crawler to make sure dataset exists in the govData CATALOG.
+            // Note : Also if dataSets from additional sources are added, this logic needs to be changed
+        }
     }
 
 
