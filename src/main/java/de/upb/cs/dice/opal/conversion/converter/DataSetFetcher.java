@@ -15,6 +15,7 @@ import org.apache.jena.query.ResultSet;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.RDFNode;
 import org.apache.jena.rdf.model.Resource;
+import org.apache.jena.rdf.model.ResourceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,7 +23,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -38,6 +38,9 @@ public class DataSetFetcher implements CredentialsProvider {
     private String tripleStoreUsername;
     @Value("${tripleStore.password}")
     private String tripleStorePassword;
+
+    @Value("${info.portals}")
+    private String[] portals;
 
     private final Converter converter;
 
@@ -55,12 +58,7 @@ public class DataSetFetcher implements CredentialsProvider {
         this.converter = converter;
     }
 
-    @PostConstruct
-    public void initializeAuthenticationAndQueryExecution() {
-        initialQueryExecutionFactory();
-    }
-
-    private void initialQueryExecutionFactory() {
+    private void initialQueryExecutionFactory(String portal) {
         credentials = new UsernamePasswordCredentials(tripleStoreUsername, tripleStorePassword);
 
         HttpClientBuilder clientBuilder = HttpClientBuilder.create();
@@ -69,7 +67,8 @@ public class DataSetFetcher implements CredentialsProvider {
 
 
         qef = new QueryExecutionFactoryHttp(
-                tripleStoreURL, new org.apache.jena.sparql.core.DatasetDescription(), client);
+                String.format(tripleStoreURL, portal),
+                new org.apache.jena.sparql.core.DatasetDescription(), client);
         qef = new QueryExecutionFactoryRetry(qef, 5, 1000);
 
     }
@@ -86,6 +85,22 @@ public class DataSetFetcher implements CredentialsProvider {
     public void fetch() throws Exception {
         logger.info("Fetching started");
 
+//        List<String> portals = new ArrayList<>();
+//        portals.add("mcloud");
+//        portals.add("govdata");
+//        portals.add("europeandataportal");
+
+        for (String portal : portals)
+            startFetchingOnePortal(portal);
+        logger.info("Fetching finished");
+    }
+
+    private void startFetchingOnePortal(String portalName) throws Exception {
+        logger.info("Starting fetching portal {}", portalName);
+        initialQueryExecutionFactory(portalName);
+
+        Resource portalResource = ResourceFactory.createResource("http://projekt-opal.de/catalog/" + portalName);
+
         long totalNumberOfDataSets = getTotalNumberOfDataSets();
         logger.debug("Total number of datasets is {}", totalNumberOfDataSets);
         if (totalNumberOfDataSets == -1) {
@@ -93,12 +108,15 @@ public class DataSetFetcher implements CredentialsProvider {
         }
 
         for (int idx = 0; idx < totalNumberOfDataSets; idx += PAGE_SIZE) {
+            logger.trace("Getting list datasets  {} : {}", idx, idx + PAGE_SIZE);
             List<Resource> listOfDataSets = getListOfDataSets(idx);
             for (Resource dataSet : listOfDataSets) {
+                logger.trace("Getting graph of {}", dataSet);
                 Model dataSetGraph = getAllPredicatesObjectsPublisherDistributions(dataSet);
-                converter.convert(dataSetGraph);
+                converter.convert(dataSetGraph, portalResource);
             }
         }
+        logger.info("fetching portal {} finished", portalName);
     }
 
     /**

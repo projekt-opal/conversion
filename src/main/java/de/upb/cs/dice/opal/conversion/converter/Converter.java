@@ -7,10 +7,9 @@ import org.apache.jena.vocabulary.DCAT;
 import org.apache.jena.vocabulary.RDF;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -19,13 +18,19 @@ public class Converter {
 
     private static final Logger logger = LoggerFactory.getLogger(Converter.class);
 
-    public void convert(Model model) {
+    private final TripleStoreWriter tripleStoreWriter;
+
+    @Autowired
+    public Converter(TripleStoreWriter tripleStoreWriter) {
+        this.tripleStoreWriter = tripleStoreWriter;
+    }
+
+    public void convert(Model model, Resource portal) {
         try {
 
             ResIterator resIterator = model.listResourcesWithProperty(RDF.type, DCAT.Dataset);
             if (resIterator.hasNext()) {
                 Resource dataSet = resIterator.nextResource();
-                String portal = getPortal(dataSet, model);
                 makeOpalConfirmedUri(model, dataSet, DCAT.Dataset, null, "dataset");
                 makeOpalConfirmedUri(model, dataSet, DCAT.Distribution, DCAT.distribution, "distribution");
                 ResIterator opalConfirmedIterator = model.listResourcesWithProperty(RDF.type, DCAT.Dataset);
@@ -33,36 +38,18 @@ public class Converter {
                 addDatasetToCatalog(dataSetOpalConfirmed, portal, model);
             }
 
-            model.write(new FileOutputStream("/home/afshin/files/opal.ttl", true));
+            tripleStoreWriter.write(model);
+
         } catch (Exception e) {
             logger.error("An error occured in saving th model, {}", e);
         }
 
     }
 
-    private void addDatasetToCatalog(Resource dataSet, String portal, Model model) {
-
-        String baseUriCatalog = "http://projekt-opal.de/catalog/" + portal.replace('.', '_'); // TODO: 07.12.18 Make URL static final
-
-        model.add(ResourceFactory.createResource(baseUriCatalog), RDF.type, DCAT.Catalog);
-        model.add(ResourceFactory.createResource(baseUriCatalog), DCAT.dataset, dataSet);
+    private void addDatasetToCatalog(Resource dataSet, Resource portal, Model model) {
+        model.add(portal, RDF.type, DCAT.Catalog);
+        model.add(portal, DCAT.dataset, dataSet);
     }
-
-    private String getPortal(Resource dataSet, Model model) {
-
-        StmtIterator stmtIterator = model.listStatements(dataSet, ResourceFactory.createProperty("http://www.w3.org/ns/dcat#catalog"), (RDFNode) null);
-        if (stmtIterator.hasNext()) {
-            Statement statement = stmtIterator.nextStatement();
-            String portal = statement.getObject().asLiteral().getString();
-            stmtIterator = model.listStatements(dataSet, ResourceFactory.createProperty("http://www.w3.org/ns/dcat#catalog"), (RDFNode) null);
-            model.remove(stmtIterator);
-            return portal;
-        } else {
-            return "govdata.de"; // TODO: 07.12.18 In the future query TS from Crawler to make sure dataset exists in the govData CATALOG.
-            // Note : Also if dataSets from additional sources are added, this logic needs to be changed
-        }
-    }
-
 
     private boolean isNotOpalConfirmed(String uri) {
         return !uri.startsWith("http://projekt-opal.de/");
