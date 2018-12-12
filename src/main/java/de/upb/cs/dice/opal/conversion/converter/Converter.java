@@ -36,6 +36,10 @@ public class Converter {
                 ResIterator opalConfirmedIterator = model.listResourcesWithProperty(RDF.type, DCAT.Dataset);
                 Resource dataSetOpalConfirmed = opalConfirmedIterator.nextResource();// TODO: 07.12.18 Check for Exception (".nextResource()")
                 addDatasetToCatalog(dataSetOpalConfirmed, portal, model);
+                //removing duplicate catalog info (if it is there)
+                StmtIterator stmtIterator = model.listStatements(dataSetOpalConfirmed,
+                        ResourceFactory.createProperty("http://www.w3.org/ns/dcat#catalog"), (RDFNode) null);
+                model.remove(stmtIterator);
             }
 
             tripleStoreWriter.write(model);
