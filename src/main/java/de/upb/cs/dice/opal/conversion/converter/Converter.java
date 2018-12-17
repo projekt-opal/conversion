@@ -8,12 +8,15 @@ import org.apache.jena.vocabulary.RDF;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
 
 @Component
+@EnableAsync
 public class Converter {
 
     private static final Logger logger = LoggerFactory.getLogger(Converter.class);
@@ -25,6 +28,8 @@ public class Converter {
         this.tripleStoreWriter = tripleStoreWriter;
     }
 
+    //FYI: for gaining more threads you can invoke your definition of ThreadPool
+    @Async
     public void convert(Model model, Resource portal) {
         try {
 

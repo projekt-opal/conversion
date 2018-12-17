@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <configuration>
-    <!--<property name="LOG_HOME" value="/var/log/TripleStoreDumperLog"/>-->
+    <!--<property name="LOG_HOME" value="/var/log/conversion-tool"/>-->
     <property name="LOG_ARCHIVE" value="${LOG_HOME}/Archived"/>
 
     <include resource="org/springframework/boot/logging/logback/defaults.xml" />
@@ -27,8 +27,10 @@
         </rollingPolicy>
     </appender>
 
-    <root level="DEBUG">
+
+    <root level="INFO">
         <appender-ref ref="FILE-AUDIT" />
-        <!--<appender-ref ref="CONSOLE" />-->
+        <appender-ref ref="CONSOLE" />
     </root>
+
 </configuration>

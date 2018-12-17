@@ -46,7 +46,7 @@ public class DataSetFetcher implements CredentialsProvider {
 
     private org.apache.http.auth.Credentials credentials;
 
-    private static final int PAGE_SIZE = 100;
+    private static final int PAGE_SIZE = 1000;
 
     private static final ImmutableMap<String, String> PREFIXES = ImmutableMap.<String, String>builder()
             .put("dcat", "http://www.w3.org/ns/dcat#")
@@ -110,12 +110,15 @@ public class DataSetFetcher implements CredentialsProvider {
         for (int idx = 0; idx < totalNumberOfDataSets; idx += PAGE_SIZE) {
             logger.trace("Getting list datasets  {} : {}", idx, idx + PAGE_SIZE);
             List<Resource> listOfDataSets = getListOfDataSets(idx);
-            for (Resource dataSet : listOfDataSets) {
+            listOfDataSets.forEach(dataSet -> {
+//            for (Resource dataSet : listOfDataSets) {
                 logger.trace("Getting graph of {}", dataSet);
                 Model dataSetGraph = getAllPredicatesObjectsPublisherDistributions(dataSet);
                 converter.convert(dataSetGraph, portalResource);
-            }
+//            }
+            });
         }
+
         logger.info("fetching portal {} finished", portalName);
     }
 
