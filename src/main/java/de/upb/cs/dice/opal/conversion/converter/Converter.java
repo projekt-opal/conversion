@@ -32,7 +32,10 @@ public class Converter {
     @Async
     public void convert(Model model, Resource portal) {
         try {
-
+            if(model == null) {
+                logger.info("Given model is null");
+                return;
+            }
             ResIterator resIterator = model.listResourcesWithProperty(RDF.type, DCAT.Dataset);
             if (resIterator.hasNext()) {
                 Resource dataSet = resIterator.nextResource();

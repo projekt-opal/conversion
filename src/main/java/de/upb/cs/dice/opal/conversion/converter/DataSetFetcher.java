@@ -73,14 +73,14 @@ public class DataSetFetcher implements CredentialsProvider {
 
     }
 
-    @Scheduled(cron = "${info.dumper.scheduler}")
-    public void scheduledDumping() {
-        try {
-            fetch();
-        } catch (Exception e) {
-            logger.error("{}", e);
-        }
-    }
+//    @Scheduled(cron = "${info.dumper.scheduler}")
+//    public void scheduledDumping() {
+//        try {
+//            fetch();
+//        } catch (Exception e) {
+//            logger.error("{}", e);
+//        }
+//    }
 
     public void fetch() throws Exception {
         logger.info("Fetching started");
@@ -109,7 +109,7 @@ public class DataSetFetcher implements CredentialsProvider {
 
         for (int idx = 0; idx < totalNumberOfDataSets; idx += PAGE_SIZE) {
             logger.trace("Getting list datasets  {} : {}", idx, idx + PAGE_SIZE);
-            List<Resource> listOfDataSets = getListOfDataSets(idx);
+            List<Resource> listOfDataSets = getListOfDataSets(idx, (int)Math.min(PAGE_SIZE, totalNumberOfDataSets - idx));
             listOfDataSets.forEach(dataSet -> {
 //            for (Resource dataSet : listOfDataSets) {
                 logger.trace("Getting graph of {}", dataSet);
@@ -143,7 +143,7 @@ public class DataSetFetcher implements CredentialsProvider {
     }
 
 
-    private List<Resource> getListOfDataSets(int idx) {
+    private List<Resource> getListOfDataSets(int idx, int limit) {
 
         ParameterizedSparqlString pss = new ParameterizedSparqlString("" +
                 "SELECT DISTINCT ?dataSet\n" +
@@ -155,7 +155,7 @@ public class DataSetFetcher implements CredentialsProvider {
                 "}\n" +
                 "ORDER BY ?dataSet\n" +
                 "OFFSET \n" + idx +
-                "LIMIT " + (idx + PAGE_SIZE)
+                "LIMIT " + limit
         );
 
         pss.setNsPrefixes(PREFIXES);
