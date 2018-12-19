@@ -1,8 +1,5 @@
 package de.upb.cs.dice.opal.conversion.converter;
 
-import org.apache.http.auth.AuthScope;
-import org.apache.http.auth.Credentials;
-import org.apache.http.client.CredentialsProvider;
 import org.apache.jena.query.ParameterizedSparqlString;
 import org.apache.jena.query.QuerySolutionMap;
 import org.apache.jena.rdf.model.Model;
@@ -20,12 +17,10 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import java.io.FileOutputStream;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicInteger;
 
 @Component
 @EnableScheduling
@@ -35,13 +30,8 @@ public class TripleStoreWriter {
 
     private ExecutorService executorService = Executors.newCachedThreadPool();
 
-    @Value("${info.outputFolder}")
-    private String outputFolder;
-
     @Value("${civetTripleStore.url}")
     private String tripleStoreURL;
-
-    private AtomicInteger cnt = new AtomicInteger(0);
 
     private Queue<Model> queue = new ConcurrentLinkedQueue<>();
 
@@ -49,6 +39,8 @@ public class TripleStoreWriter {
         logger.trace("adding a model to queue");
         queue.add(model);
     }
+
+    // TODO: 19.12.18 Remove scheduling because 50Triples per write is the best option
 
     @Scheduled(fixedDelay = 10000)
     public void intervalWrite() {
@@ -62,21 +54,10 @@ public class TripleStoreWriter {
                 batchModel.add(model);
             }
             Runnable runnable = () -> writeToTripleStore(batchModel);
-//                    writeToFile(batchModel, cnt.getAndAdd(1)
-
             executorService.submit(runnable);
         }
         logger.debug("finished intervalWrite, {}", size);
 
-    }
-
-    private void writeToFile(Model batchModel, int cnt) {
-        try(FileOutputStream fileOutputStream =
-                    new FileOutputStream(String.format("%s/model_%d.ttl", outputFolder, cnt))) {
-            batchModel.write(fileOutputStream, "TURTLE");
-        } catch (Exception e) {
-            logger.error("An error occurred in writing to file, {}", e);
-        }
     }
 
     public void writeToTripleStore(Model model) {
@@ -88,11 +69,11 @@ public class TripleStoreWriter {
         int cnt = 0;
         StringBuilder triples = new StringBuilder();
         while (stmtIterator.hasNext()) {
-            if(cnt > 50) {
+            if (cnt > 50) {
                 runWriteQuery(triples, mp);
                 triples = new StringBuilder();
                 mp = new QuerySolutionMap();
-                cnt =0;
+                cnt = 0;
             }
             Statement statement = stmtIterator.nextStatement();
 
