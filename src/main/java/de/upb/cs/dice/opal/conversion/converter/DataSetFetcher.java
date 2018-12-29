@@ -20,7 +20,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -82,44 +81,55 @@ public class DataSetFetcher implements CredentialsProvider {
 //        }
 //    }
 
-    public void fetch() throws Exception {
-        logger.info("Fetching started");
+    public void fetch() {
+        try {
+            logger.info("Fetching started");
 
-//        List<String> portals = new ArrayList<>();
-//        portals.add("mcloud");
-//        portals.add("govdata");
-//        portals.add("europeandataportal");
-
-        for (String portal : portals)
-            startFetchingOnePortal(portal);
-        logger.info("Fetching finished");
+            for (String portal : portals)
+                startFetchingOnePortal(portal);
+            logger.info("Fetching finished");
+        } catch (Exception e) {
+            logger.error("An Error occurred in converting portals. {}", e);
+        }
     }
 
-    private void startFetchingOnePortal(String portalName) throws Exception {
-        logger.info("Starting fetching portal {}", portalName);
-        initialQueryExecutionFactory(portalName);
+    private void startFetchingOnePortal(String portalName) {
+        try {
+            logger.info("Starting fetching portal {}", portalName);
+            initialQueryExecutionFactory(portalName);
 
-        Resource portalResource = ResourceFactory.createResource("http://projekt-opal.de/catalog/" + portalName);
+            Resource portalResource = ResourceFactory.createResource("http://projekt-opal.de/catalog/" + portalName);
 
-        long totalNumberOfDataSets = getTotalNumberOfDataSets();
-        logger.debug("Total number of datasets is {}", totalNumberOfDataSets);
-        if (totalNumberOfDataSets == -1) {
-            throw new Exception("Cannot Query the TripleStore");
+            long totalNumberOfDataSets = getTotalNumberOfDataSets();
+            logger.debug("Total number of datasets is {}", totalNumberOfDataSets);
+            if (totalNumberOfDataSets == -1) {
+                throw new Exception("Cannot Query the TripleStore");
+            }
+
+            for (int idx = 0; idx < totalNumberOfDataSets; idx += PAGE_SIZE) {
+                logger.trace("Getting list datasets  {} : {}", idx, idx + PAGE_SIZE);
+                List<Resource> listOfDataSets = getListOfDataSets(idx, (int) Math.min(PAGE_SIZE, totalNumberOfDataSets - idx));
+                listOfDataSets.forEach(dataSet -> {
+                    //            for (Resource dataSet : listOfDataSets) {
+                    logger.trace("Getting graph of {}", dataSet);
+                    Model dataSetGraph = getAllPredicatesObjectsPublisherDistributions(dataSet);
+                    converter.convert(dataSetGraph, portalResource);
+                    //            }
+                });
+                if(idx % (200*PAGE_SIZE) == 0) {
+                    try {
+                        logger.debug("sleep fetching for 1000sec");
+                        Thread.sleep(1000000);
+                    } catch (InterruptedException e) {
+                        logger.error("Thread.sleeping error, {}", e);
+                    }
+                }
+            }
+
+            logger.info("fetching portal {} finished", portalName);
+        } catch (Exception e) {
+            logger.error("An Error occurred in converting portal {}, {}", portalName, e);
         }
-
-        for (int idx = 0; idx < totalNumberOfDataSets; idx += PAGE_SIZE) {
-            logger.trace("Getting list datasets  {} : {}", idx, idx + PAGE_SIZE);
-            List<Resource> listOfDataSets = getListOfDataSets(idx, (int)Math.min(PAGE_SIZE, totalNumberOfDataSets - idx));
-            listOfDataSets.forEach(dataSet -> {
-//            for (Resource dataSet : listOfDataSets) {
-                logger.trace("Getting graph of {}", dataSet);
-                Model dataSetGraph = getAllPredicatesObjectsPublisherDistributions(dataSet);
-                converter.convert(dataSetGraph, portalResource);
-//            }
-            });
-        }
-
-        logger.info("fetching portal {} finished", portalName);
     }
 
     /**

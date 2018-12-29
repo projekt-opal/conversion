@@ -46,8 +46,8 @@ public class TripleStoreWriter {
     public void intervalWrite() {
         int size = queue.size();
         logger.debug("intervalWrite, {}", size);
-        if (queue.size() > 0) {
-            int len = queue.size();
+        if (size > 0) {
+            int len = size;
             final Model batchModel = ModelFactory.createDefaultModel();
             while (len-- > 0) {
                 Model model = queue.poll();
@@ -97,11 +97,12 @@ public class TripleStoreWriter {
     }
 
     private void runWriteQuery(StringBuilder triples, QuerySolutionMap mp) {
-
-        ParameterizedSparqlString pss = new ParameterizedSparqlString("INSERT DATA { " + triples + "}");
-        pss.setParams(mp);
-
         try {
+
+            ParameterizedSparqlString pss = new ParameterizedSparqlString("INSERT DATA { graph <http://projekt-opal.de> {" + triples + "}}");
+            pss.setParams(mp);
+
+
             UpdateRequest request = UpdateFactory.create(pss.toString());
             UpdateProcessor proc = UpdateExecutionFactory.createRemote(request, tripleStoreURL);
             try {

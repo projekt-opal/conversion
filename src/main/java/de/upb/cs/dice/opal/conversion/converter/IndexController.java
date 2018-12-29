@@ -16,13 +16,7 @@ public class IndexController {
 
     @GetMapping("/convert")
     public String convert() {
-
-        try {
-            dataSetFetcher.fetch();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
+        dataSetFetcher.fetch();
         return "index";
     }
 

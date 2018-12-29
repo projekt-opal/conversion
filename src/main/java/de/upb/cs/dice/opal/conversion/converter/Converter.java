@@ -32,7 +32,7 @@ public class Converter {
     @Async
     public void convert(Model model, Resource portal) {
         try {
-            if(model == null) {
+            if (model == null) {
                 logger.info("Given model is null");
                 return;
             }
@@ -48,12 +48,11 @@ public class Converter {
                 StmtIterator stmtIterator = model.listStatements(dataSetOpalConfirmed,
                         ResourceFactory.createProperty("http://www.w3.org/ns/dcat#catalog"), (RDFNode) null);
                 model.remove(stmtIterator);
+                tripleStoreWriter.write(model);
             }
 
-            tripleStoreWriter.write(model);
-
         } catch (Exception e) {
-            logger.error("An error occured in saving th model, {}", e);
+            logger.error("An error occurred in converting th model, {}", e);
         }
 
     }
