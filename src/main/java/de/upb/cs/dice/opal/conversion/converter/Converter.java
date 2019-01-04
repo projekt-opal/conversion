@@ -39,6 +39,7 @@ public class Converter {
             ResIterator resIterator = model.listResourcesWithProperty(RDF.type, DCAT.Dataset);
             if (resIterator.hasNext()) {
                 Resource dataSet = resIterator.nextResource();
+                // After the dataset URI is changed to Opal format, new URI to be passed for distribution
                 dataSet = makeOpalConfirmedUri(model, dataSet, DCAT.Dataset, null, "dataset");
                 makeOpalConfirmedUri(model, dataSet, DCAT.Distribution, DCAT.distribution, "distribution");
                 ResIterator opalConfirmedIterator = model.listResourcesWithProperty(RDF.type, DCAT.Dataset);
@@ -88,6 +89,10 @@ public class Converter {
                     model.remove(dataSet, propertyType, oldResource);
                     model.add(dataSet, propertyType, newResource);
                 }
+            }
+            // for mcloud portal
+            else {
+                newResource = dataSet;
             }
         }
         return newResource;
