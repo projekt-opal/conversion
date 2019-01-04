@@ -39,7 +39,7 @@ public class Converter {
             ResIterator resIterator = model.listResourcesWithProperty(RDF.type, DCAT.Dataset);
             if (resIterator.hasNext()) {
                 Resource dataSet = resIterator.nextResource();
-                makeOpalConfirmedUri(model, dataSet, DCAT.Dataset, null, "dataset");
+                dataSet = makeOpalConfirmedUri(model, dataSet, DCAT.Dataset, null, "dataset");
                 makeOpalConfirmedUri(model, dataSet, DCAT.Distribution, DCAT.distribution, "distribution");
                 ResIterator opalConfirmedIterator = model.listResourcesWithProperty(RDF.type, DCAT.Dataset);
                 Resource dataSetOpalConfirmed = opalConfirmedIterator.nextResource();// TODO: 07.12.18 Check for Exception (".nextResource()")
@@ -66,12 +66,13 @@ public class Converter {
         return !uri.startsWith("http://projekt-opal.de/");
     }
 
-    private void makeOpalConfirmedUri(Model model, Resource dataSet, Resource classType, Property propertyType, String typeName) {
+    private Resource makeOpalConfirmedUri(Model model, Resource dataSet, Resource classType, Property propertyType, String typeName) {
         ResIterator resIterator = model.listResourcesWithProperty(RDF.type, classType);
+        Resource newResource = null;
         while (resIterator.hasNext()) {
             Resource oldResource = resIterator.nextResource();
             if (isNotOpalConfirmed(oldResource.getURI())) {
-                Resource newResource = generateOpalConfirmedUrl(oldResource, typeName);
+                newResource = generateOpalConfirmedUrl(oldResource, typeName);
 
                 StmtIterator oldIterator = model.listStatements(new SelectorImpl(oldResource, null, (RDFNode) null));
                 List<Statement> newResourceStatements = new ArrayList<>();
@@ -89,6 +90,7 @@ public class Converter {
                 }
             }
         }
+        return newResource;
     }
 
     private Resource generateOpalConfirmedUrl(Resource resource, String type) {
