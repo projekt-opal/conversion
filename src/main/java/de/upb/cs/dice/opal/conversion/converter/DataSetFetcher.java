@@ -109,17 +109,17 @@ public class DataSetFetcher implements CredentialsProvider {
             for (int idx = 0; idx < totalNumberOfDataSets; idx += PAGE_SIZE) {
                 logger.trace("Getting list datasets  {} : {}", idx, idx + PAGE_SIZE);
                 List<Resource> listOfDataSets = getListOfDataSets(idx, (int) Math.min(PAGE_SIZE, totalNumberOfDataSets - idx));
-                listOfDataSets.forEach(dataSet -> {
-                    //            for (Resource dataSet : listOfDataSets) {
+                listOfDataSets
+                        .parallelStream()
+                            .forEach(dataSet -> {
                     logger.trace("Getting graph of {}", dataSet);
                     Model dataSetGraph = getAllPredicatesObjectsPublisherDistributions(dataSet);
                     converter.convert(dataSetGraph, portalResource);
-                    //            }
                 });
-                if(idx % (200*PAGE_SIZE) == 0) {
+                if(idx > 0 && idx % (100*PAGE_SIZE) == 0) {
                     try {
-                        logger.debug("sleep fetching for 1000sec");
-                        Thread.sleep(1000000);
+                        logger.debug("sleep fetching for 700sec"); //to let apache fuseki writes its journal to the disk
+                        Thread.sleep(700000);
                     } catch (InterruptedException e) {
                         logger.error("Thread.sleeping error, {}", e);
                     }

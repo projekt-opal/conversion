@@ -5,6 +5,7 @@ import org.apache.jena.rdf.model.impl.SelectorImpl;
 import org.apache.jena.rdf.model.impl.StatementImpl;
 import org.apache.jena.vocabulary.DCAT;
 import org.apache.jena.vocabulary.RDF;
+import org.dice_research.opal.civet.CivetApi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -49,6 +50,11 @@ public class Converter {
                 StmtIterator stmtIterator = model.listStatements(dataSetOpalConfirmed,
                         ResourceFactory.createProperty("http://www.w3.org/ns/dcat#catalog"), (RDFNode) null);
                 model.remove(stmtIterator);
+
+                //CIVET quality metrics calculator is called
+                CivetApi civetApi = new CivetApi();
+                model = civetApi.computeFuture(model).get();
+
                 tripleStoreWriter.write(model);
             }
 
