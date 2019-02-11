@@ -2,7 +2,10 @@ package de.upb.cs.dice.opal.conversion.converter;
 
 import org.apache.jena.query.ParameterizedSparqlString;
 import org.apache.jena.query.QuerySolutionMap;
-import org.apache.jena.rdf.model.*;
+import org.apache.jena.rdf.model.Model;
+import org.apache.jena.rdf.model.ModelFactory;
+import org.apache.jena.rdf.model.Statement;
+import org.apache.jena.rdf.model.StmtIterator;
 import org.apache.jena.update.UpdateExecutionFactory;
 import org.apache.jena.update.UpdateFactory;
 import org.apache.jena.update.UpdateProcessor;
@@ -18,7 +21,6 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicLong;
 
 @Component
 @EnableScheduling
@@ -27,8 +29,6 @@ public class TripleStoreWriter {
     private static final Logger logger = LoggerFactory.getLogger(TripleStoreWriter.class);
 
     private ExecutorService executorService = Executors.newCachedThreadPool();
-
-    public  static AtomicLong counter = new AtomicLong();
 
     @Value("${civetTripleStore.url}")
     private String tripleStoreURL;
@@ -69,7 +69,6 @@ public class TripleStoreWriter {
         int cnt = 0;
         StringBuilder triples = new StringBuilder();
         while (stmtIterator.hasNext()) {
-
             if (cnt > 50) {
                 runWriteQuery(triples, mp);
                 triples = new StringBuilder();
@@ -78,60 +77,20 @@ public class TripleStoreWriter {
             }
             Statement statement = stmtIterator.nextStatement();
 
-            if(statement.getPredicate().equals(ResourceFactory.createProperty("http://www.w3.org/ns/dqv#hasQualityMeasurement")))
-            {
-                long number = counter.incrementAndGet();
-                String s = "?s" + cnt;
-                String p = "?p" + cnt;
-                String o = "?o" + cnt;
+            String s = "?s" + cnt;
+            String p = "?p" + cnt;
+            String o = "?o" + cnt;
 
-                cnt++;
+            cnt++;
 
-                mp.add(s, statement.getSubject());
-                mp.add(p, statement.getPredicate());
-                mp.add(o, ResourceFactory.createResource("http://projekt-opal.de/measurement"+number));
-                triples
-                        .append(s).append(' ')
-                        .append(p).append(' ')
-                        .append(o).append(" . ");
+            mp.add(s, statement.getSubject());
+            mp.add(p, statement.getPredicate());
+            mp.add(o, statement.getObject());
 
-                StmtIterator qualityMetricIterator = model.listStatements(statement.getObject().asResource(), null, (RDFNode) null);
-                while(qualityMetricIterator.hasNext())
-                {
-                    Statement stmt = qualityMetricIterator.nextStatement();
-                    s = "?s" + cnt;
-                    p = "?p" + cnt;
-                    o = "?o" + cnt;
-
-                    cnt++;
-
-                    mp.add(s, ResourceFactory.createResource("http://projekt-opal.de/measurement"+number));
-                    mp.add(p, stmt.getPredicate());
-                    mp.add(o, stmt.getObject());
-                    triples
-                            .append(s).append(' ')
-                            .append(p).append(' ')
-                            .append(o).append(" . ");
-                }
-
-            }
-
-            else {
-                String s = "?s" + cnt;
-                String p = "?p" + cnt;
-                String o = "?o" + cnt;
-
-                cnt++;
-
-                mp.add(s, statement.getSubject());
-                mp.add(p, statement.getPredicate());
-                mp.add(o, statement.getObject());
-
-                triples
-                        .append(s).append(' ')
-                        .append(p).append(' ')
-                        .append(o).append(" . ");
-            }
+            triples
+                    .append(s).append(' ')
+                    .append(p).append(' ')
+                    .append(o).append(" . ");
         }
 
         runWriteQuery(triples, mp);

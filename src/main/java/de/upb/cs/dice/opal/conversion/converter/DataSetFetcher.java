@@ -110,6 +110,7 @@ public class DataSetFetcher implements CredentialsProvider {
                 logger.trace("Getting list datasets  {} : {}", idx, idx + PAGE_SIZE);
                 List<Resource> listOfDataSets = getListOfDataSets(idx, (int) Math.min(PAGE_SIZE, totalNumberOfDataSets - idx));
                 listOfDataSets
+//                        .subList(0,1) //only for debug
                         .parallelStream()
                             .forEach(dataSet -> {
                     logger.trace("Getting graph of {}", dataSet);

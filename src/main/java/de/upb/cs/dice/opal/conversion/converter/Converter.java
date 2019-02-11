@@ -15,6 +15,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 
 @Component
 @EnableAsync
@@ -23,6 +24,9 @@ public class Converter {
     private static final Logger logger = LoggerFactory.getLogger(Converter.class);
 
     private final TripleStoreWriter tripleStoreWriter;
+
+    private static final Property measurementProperty = ResourceFactory.createProperty("http://www.w3.org/ns/dqv#hasQualityMeasurement");
+    private static AtomicLong measurementCounter = new AtomicLong();
 
     @Autowired
     public Converter(TripleStoreWriter tripleStoreWriter) {
@@ -54,6 +58,7 @@ public class Converter {
                 //CIVET quality metrics calculator is called
                 CivetApi civetApi = new CivetApi();
                 model = civetApi.computeFuture(model).get();
+                makeOpalConfirmedQualityMeasurements(model, dataSet);
 
                 tripleStoreWriter.write(model);
             }
@@ -62,6 +67,29 @@ public class Converter {
             logger.error("An error occurred in converting th model, {}", e);
         }
 
+    }
+
+    private void makeOpalConfirmedQualityMeasurements(Model model, Resource dataSet) {
+        List<Statement> qualityMeasurementStmtIterator = model.listStatements(
+                new SimpleSelector(dataSet, measurementProperty, (RDFNode) null)).toList();
+        for(Statement statement: qualityMeasurementStmtIterator) {
+            Resource oldMeasurementResource = statement.getObject().asResource();
+            long number = measurementCounter.incrementAndGet();
+            Resource newMeasurementResource = ResourceFactory.createResource("http://projekt-opal.de/measurement" + number);
+
+            StmtIterator oldIterator = model.listStatements(new SelectorImpl(oldMeasurementResource, null, (RDFNode) null));
+            List<Statement> newResourceStatements = new ArrayList<>();
+            while (oldIterator.hasNext()) {
+                Statement stmt = oldIterator.nextStatement();
+                newResourceStatements.add(new StatementImpl(newMeasurementResource, stmt.getPredicate(), stmt.getObject()));
+            }
+            oldIterator = model.listStatements(new SelectorImpl(oldMeasurementResource, null, (RDFNode) null));
+            model.remove(oldIterator);
+            model.add(newResourceStatements);
+
+            model.remove(dataSet, measurementProperty, oldMeasurementResource);
+            model.add(dataSet, measurementProperty, newMeasurementResource);
+        }
     }
 
     private void addDatasetToCatalog(Resource dataSet, Resource portal, Model model) {
@@ -95,9 +123,7 @@ public class Converter {
                     model.remove(dataSet, propertyType, oldResource);
                     model.add(dataSet, propertyType, newResource);
                 }
-            }
-            // for mcloud portal
-            else {
+            } else { // for mcloud portal
                 newResource = dataSet;
             }
         }
