@@ -33,8 +33,7 @@ public class Converter {
         this.tripleStoreWriter = tripleStoreWriter;
     }
 
-    //FYI: for gaining more threads you can invoke your definition of ThreadPool
-    @Async
+    @Async("threadPoolTaskExecutor")
     public void convert(Model model, Resource portal) {
         try {
             if (model == null) {
@@ -56,15 +55,19 @@ public class Converter {
                 model.remove(stmtIterator);
 
                 //CIVET quality metrics calculator is called
-                CivetApi civetApi = new CivetApi();
-                model = civetApi.computeFuture(model).get();
-                makeOpalConfirmedQualityMeasurements(model, dataSet);
+                try{
+                    CivetApi civetApi = new CivetApi();
+                    model = civetApi.computeFuture(model).get();
+                    makeOpalConfirmedQualityMeasurements(model, dataSet);
+                } catch (Exception ex) {
+                    logger.error("An error occurred in CIVET for dataset {}: ", dataSet, ex);
+                }
 
                 tripleStoreWriter.write(model);
             }
 
         } catch (Exception e) {
-            logger.error("An error occurred in converting th model, {}", e);
+            logger.error("An error occurred in converting th model ", e);
         }
 
     }

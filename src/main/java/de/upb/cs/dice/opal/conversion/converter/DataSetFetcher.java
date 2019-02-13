@@ -20,12 +20,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.EnableRetry;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
 
 @Component
+@EnableRetry
 public class DataSetFetcher implements CredentialsProvider {
     private static final Logger logger = LoggerFactory.getLogger(DataSetFetcher.class);
 
@@ -107,19 +111,19 @@ public class DataSetFetcher implements CredentialsProvider {
             }
 
             for (int idx = 0; idx < totalNumberOfDataSets; idx += PAGE_SIZE) {
-                logger.trace("Getting list datasets  {} : {}", idx, idx + PAGE_SIZE);
+                logger.info("Getting list datasets  {} : {}", idx, idx + PAGE_SIZE);
                 List<Resource> listOfDataSets = getListOfDataSets(idx, (int) Math.min(PAGE_SIZE, totalNumberOfDataSets - idx));
                 listOfDataSets
 //                        .subList(0,1) //only for debug
                         .parallelStream()
-                            .forEach(dataSet -> {
-                    logger.trace("Getting graph of {}", dataSet);
-                    Model dataSetGraph = getAllPredicatesObjectsPublisherDistributions(dataSet);
-                    converter.convert(dataSetGraph, portalResource);
-                });
-                if(idx > 0 && idx % (100*PAGE_SIZE) == 0) {
+                        .forEach(dataSet -> {
+                            logger.trace("Getting graph of {}", dataSet);
+                            getGraphAndConvert(portalResource, dataSet);
+                        });
+
+                if (idx > 0 && idx % (100 * PAGE_SIZE) == 0) {
                     try {
-                        logger.debug("sleep fetching for 700sec"); //to let apache fuseki writes its journal to the disk
+                        logger.info("sleep fetching for 700sec"); //to let apache fuseki writes its journal to the disk
                         Thread.sleep(700000);
                     } catch (InterruptedException e) {
                         logger.error("Thread.sleeping error, {}", e);
@@ -131,6 +135,12 @@ public class DataSetFetcher implements CredentialsProvider {
         } catch (Exception e) {
             logger.error("An Error occurred in converting portal {}, {}", portalName, e);
         }
+    }
+
+    @Retryable(maxAttempts = 5, backoff = @Backoff(delay = 1000))
+    private void getGraphAndConvert(Resource portalResource, Resource dataSet) {
+        Model dataSetGraph = getAllPredicatesObjectsPublisherDistributions(dataSet);
+        converter.convert(dataSetGraph, portalResource);
     }
 
     /**

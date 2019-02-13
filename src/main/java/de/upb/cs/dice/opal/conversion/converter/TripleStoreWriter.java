@@ -13,6 +13,9 @@ import org.apache.jena.update.UpdateRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.EnableRetry;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -24,6 +27,7 @@ import java.util.concurrent.Executors;
 
 @Component
 @EnableScheduling
+@EnableRetry
 public class TripleStoreWriter {
 
     private static final Logger logger = LoggerFactory.getLogger(TripleStoreWriter.class);
@@ -42,7 +46,7 @@ public class TripleStoreWriter {
 
     // TODO: 19.12.18 Remove scheduling because 50Triples per write is the best option
 
-    @Scheduled(fixedDelay = 10000)
+    @Scheduled(fixedDelay = 1000)
     public void intervalWrite() {
         int size = queue.size();
         logger.debug("intervalWrite, {}", size);
@@ -60,7 +64,7 @@ public class TripleStoreWriter {
 
     }
 
-    public void writeToTripleStore(Model model) {
+    private void writeToTripleStore(Model model) {
 
         // TODO: 12.12.18 find better way to get toString of RdfNodes
 
@@ -96,6 +100,7 @@ public class TripleStoreWriter {
         runWriteQuery(triples, mp);
     }
 
+    @Retryable(maxAttempts = 3, backoff = @Backoff(delay = 2))
     private void runWriteQuery(StringBuilder triples, QuerySolutionMap mp) {
         try {
 
@@ -103,15 +108,17 @@ public class TripleStoreWriter {
             pss.setParams(mp);
 
 
-            UpdateRequest request = UpdateFactory.create(pss.toString());
+            String query = pss.toString();
+            logger.debug("writing query is: {}", query);
+            UpdateRequest request = UpdateFactory.create(query);
             UpdateProcessor proc = UpdateExecutionFactory.createRemote(request, tripleStoreURL);
             try {
                 proc.execute();
             } catch (Exception e) {
-                logger.error("An error occurred in writing to TripleStore, {}", e);
+                logger.error("An error occurred in writing to TripleStore ", e);
             }
         } catch (Exception e) {
-            logger.error("An error occurred in writing to TripleStore, {}", e);
+            logger.error("An error occurred in writing to TripleStore ", e);
         }
     }
 
