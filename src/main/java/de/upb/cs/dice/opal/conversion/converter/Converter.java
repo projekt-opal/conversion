@@ -5,41 +5,31 @@ import org.apache.jena.rdf.model.impl.SelectorImpl;
 import org.apache.jena.rdf.model.impl.StatementImpl;
 import org.apache.jena.vocabulary.DCAT;
 import org.apache.jena.vocabulary.RDF;
-import org.dice_research.opal.civet.CivetApi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.scheduling.annotation.Async;
-import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.jms.annotation.JmsListener;
+import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
 
 @Component
-@EnableAsync
 public class Converter {
 
     private static final Logger logger = LoggerFactory.getLogger(Converter.class);
 
-    private final TripleStoreWriter tripleStoreWriter;
-
-    private static final Property measurementProperty = ResourceFactory.createProperty("http://www.w3.org/ns/dqv#hasQualityMeasurement");
-    private static AtomicLong measurementCounter = new AtomicLong();
-
-    @Autowired
-    public Converter(TripleStoreWriter tripleStoreWriter) {
-        this.tripleStoreWriter = tripleStoreWriter;
-    }
-
-    @Async("threadPoolTaskExecutor")
-    public void convert(Model model, Resource portal) {
+    @JmsListener(destination = "conversionQueue", containerFactory = "messageFactory")
+    @SendTo("civetQueue")
+    public byte[] convert(byte[] bytes) {
         try {
+
+            Model model = RDFUtility.deserialize(bytes);
             if (model == null) {
                 logger.info("Given model is null");
-                return;
+                return bytes;
             }
+
             ResIterator resIterator = model.listResourcesWithProperty(RDF.type, DCAT.Dataset);
             if (resIterator.hasNext()) {
                 Resource dataSet = resIterator.nextResource();
@@ -48,56 +38,36 @@ public class Converter {
                 makeOpalConfirmedUri(model, dataSet, DCAT.Distribution, DCAT.distribution, "distribution");
                 ResIterator opalConfirmedIterator = model.listResourcesWithProperty(RDF.type, DCAT.Dataset);
                 Resource dataSetOpalConfirmed = opalConfirmedIterator.nextResource();// TODO: 07.12.18 Check for Exception (".nextResource()")
-                addDatasetToCatalog(dataSetOpalConfirmed, portal, model);
+                addDatasetToCatalog(dataSetOpalConfirmed, model);
                 //removing duplicate catalog info (if it is there)
                 StmtIterator stmtIterator = model.listStatements(dataSetOpalConfirmed,
                         ResourceFactory.createProperty("http://www.w3.org/ns/dcat#catalog"), (RDFNode) null);
                 model.remove(stmtIterator);
 
-                //CIVET quality metrics calculator is called
-                try{
-                    CivetApi civetApi = new CivetApi();
-                    model = civetApi.computeFuture(model).get();
-                    makeOpalConfirmedQualityMeasurements(model, dataSet);
-                } catch (Exception ex) {
-                    logger.error("An error occurred in CIVET for dataset {}: ", dataSet, ex);
-                }
 
-                tripleStoreWriter.write(model);
+                byte[] serialize = RDFUtility.serialize(model);
+                return serialize;
+//                jmsTemplate.convertAndSend("civetQueue", serialize);
             }
 
         } catch (Exception e) {
             logger.error("An error occurred in converting th model ", e);
         }
 
+        return bytes;
     }
 
-    private void makeOpalConfirmedQualityMeasurements(Model model, Resource dataSet) {
-        List<Statement> qualityMeasurementStmtIterator = model.listStatements(
-                new SimpleSelector(dataSet, measurementProperty, (RDFNode) null)).toList();
-        for(Statement statement: qualityMeasurementStmtIterator) {
-            Resource oldMeasurementResource = statement.getObject().asResource();
-            long number = measurementCounter.incrementAndGet();
-            Resource newMeasurementResource = ResourceFactory.createResource("http://projekt-opal.de/measurement" + number);
 
-            StmtIterator oldIterator = model.listStatements(new SelectorImpl(oldMeasurementResource, null, (RDFNode) null));
-            List<Statement> newResourceStatements = new ArrayList<>();
-            while (oldIterator.hasNext()) {
-                Statement stmt = oldIterator.nextStatement();
-                newResourceStatements.add(new StatementImpl(newMeasurementResource, stmt.getPredicate(), stmt.getObject()));
-            }
-            oldIterator = model.listStatements(new SelectorImpl(oldMeasurementResource, null, (RDFNode) null));
-            model.remove(oldIterator);
-            model.add(newResourceStatements);
-
-            model.remove(dataSet, measurementProperty, oldMeasurementResource);
-            model.add(dataSet, measurementProperty, newMeasurementResource);
+    private void addDatasetToCatalog(Resource dataSet, Model model) {
+        StmtIterator iterator = model.listStatements(
+                new SimpleSelector(dataSet, DataSetFetcher.opalTemporalCatalogProperty, (RDFNode) null));
+        if (iterator.hasNext()) {
+            Statement statement = iterator.nextStatement();
+            Resource portal = statement.getObject().asResource();
+            model.remove(dataSet, DataSetFetcher.opalTemporalCatalogProperty, portal);
+            model.add(portal, RDF.type, DCAT.Catalog);
+            model.add(portal, DCAT.dataset, dataSet);
         }
-    }
-
-    private void addDatasetToCatalog(Resource dataSet, Resource portal, Model model) {
-        model.add(portal, RDF.type, DCAT.Catalog);
-        model.add(portal, DCAT.dataset, dataSet);
     }
 
     private boolean isNotOpalConfirmed(String uri) {

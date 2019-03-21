@@ -12,14 +12,12 @@ import org.apache.jena.query.ParameterizedSparqlString;
 import org.apache.jena.query.QueryExecution;
 import org.apache.jena.query.QuerySolution;
 import org.apache.jena.query.ResultSet;
-import org.apache.jena.rdf.model.Model;
-import org.apache.jena.rdf.model.RDFNode;
-import org.apache.jena.rdf.model.Resource;
-import org.apache.jena.rdf.model.ResourceFactory;
+import org.apache.jena.rdf.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.jms.core.JmsTemplate;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.EnableRetry;
 import org.springframework.retry.annotation.Retryable;
@@ -33,6 +31,9 @@ import java.util.List;
 public class DataSetFetcher implements CredentialsProvider {
     private static final Logger logger = LoggerFactory.getLogger(DataSetFetcher.class);
 
+    static final Property opalTemporalCatalogProperty =
+            ResourceFactory.createProperty("http://projekt-opal.de/catalog");
+
 
     private org.aksw.jena_sparql_api.core.QueryExecutionFactory qef;
     @Value("${tripleStore.url}")
@@ -45,8 +46,6 @@ public class DataSetFetcher implements CredentialsProvider {
     @Value("${info.portals}")
     private String[] portals;
 
-    private final Converter converter;
-
     private org.apache.http.auth.Credentials credentials;
 
     private static final int PAGE_SIZE = 1000;
@@ -56,9 +55,11 @@ public class DataSetFetcher implements CredentialsProvider {
             .put("dct", "http://purl.org/dc/terms/")
             .build();
 
+    private final JmsTemplate jmsTemplate;
+
     @Autowired
-    public DataSetFetcher(Converter converter) {
-        this.converter = converter;
+    public DataSetFetcher(JmsTemplate jmsTemplate) {
+        this.jmsTemplate = jmsTemplate;
     }
 
     private void initialQueryExecutionFactory(String portal) {
@@ -118,17 +119,12 @@ public class DataSetFetcher implements CredentialsProvider {
                         .parallelStream()
                         .forEach(dataSet -> {
                             logger.trace("Getting graph of {}", dataSet);
-                            getGraphAndConvert(portalResource, dataSet);
+                            try {
+                                getGraphAndConvert(portalResource, dataSet);
+                            } catch (Exception e) {
+                                logger.error("An error occurred in getting graph and converting of it for ", dataSet, e);
+                            }
                         });
-
-                if (idx > 0 && idx % (100 * PAGE_SIZE) == 0) {
-                    try {
-                        logger.info("sleep fetching for 700sec"); //to let apache fuseki writes its journal to the disk
-                        Thread.sleep(700000);
-                    } catch (InterruptedException e) {
-                        logger.error("Thread.sleeping error, {}", e);
-                    }
-                }
             }
 
             logger.info("fetching portal {} finished", portalName);
@@ -140,7 +136,10 @@ public class DataSetFetcher implements CredentialsProvider {
     @Retryable(maxAttempts = 5, backoff = @Backoff(delay = 1000))
     private void getGraphAndConvert(Resource portalResource, Resource dataSet) {
         Model dataSetGraph = getAllPredicatesObjectsPublisherDistributions(dataSet);
-        converter.convert(dataSetGraph, portalResource);
+        dataSetGraph.add(dataSet, opalTemporalCatalogProperty, portalResource);
+        byte[] bytes = RDFUtility.serialize(dataSetGraph);
+        //enqueue charge response to activemq to
+        jmsTemplate.convertAndSend("conversionQueue", bytes);
     }
 
     /**

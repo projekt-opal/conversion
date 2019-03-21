@@ -1,9 +1,13 @@
 package de.upb.cs.dice.opal.conversion.converter;
 
+import org.apache.http.auth.AuthScope;
+import org.apache.http.auth.Credentials;
+import org.apache.http.auth.UsernamePasswordCredentials;
+import org.apache.http.client.CredentialsProvider;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.jena.query.ParameterizedSparqlString;
 import org.apache.jena.query.QuerySolutionMap;
 import org.apache.jena.rdf.model.Model;
-import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.rdf.model.Statement;
 import org.apache.jena.rdf.model.StmtIterator;
 import org.apache.jena.update.UpdateExecutionFactory;
@@ -13,67 +17,48 @@ import org.apache.jena.update.UpdateRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.jms.annotation.JmsListener;
+import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.EnableRetry;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.scheduling.annotation.EnableScheduling;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 @Component
 @EnableScheduling
 @EnableRetry
-public class TripleStoreWriter {
+public class TripleStoreWriter implements CredentialsProvider {
 
     private static final Logger logger = LoggerFactory.getLogger(TripleStoreWriter.class);
-
-    private ExecutorService executorService = Executors.newCachedThreadPool();
 
     @Value("${civetTripleStore.url}")
     private String tripleStoreURL;
 
-    private Queue<Model> queue = new ConcurrentLinkedQueue<>();
+    org.apache.http.impl.client.CloseableHttpClient client;
 
-    public void write(Model model) {
-        logger.trace("adding a model to queue");
-        queue.add(model);
+
+    public TripleStoreWriter() {
+        this.credentials = new UsernamePasswordCredentials("dba", "dba");
+        HttpClientBuilder clientBuilder = HttpClientBuilder.create();
+        clientBuilder.setDefaultCredentialsProvider(this);
+        client = clientBuilder.build();
     }
 
-    // TODO: 19.12.18 Remove scheduling because 50Triples per write is the best option
-
-    @Scheduled(fixedDelay = 1000)
-    public void intervalWrite() {
-        int size = queue.size();
-        logger.debug("intervalWrite, {}", size);
-        if (size > 0) {
-            int len = size;
-            final Model batchModel = ModelFactory.createDefaultModel();
-            while (len-- > 0) {
-                Model model = queue.poll();
-                batchModel.add(model);
-            }
-            Runnable runnable = () -> writeToTripleStore(batchModel);
-            executorService.submit(runnable);
-        }
-        logger.debug("finished intervalWrite, {}", size);
-
-    }
-
-    private void writeToTripleStore(Model model) {
+    @JmsListener(destination = "writerQueue", containerFactory = "messageFactory")
+    @SendTo("fileQueue")
+    public byte[] writeToTripleStore(byte[] bytes) {
 
         // TODO: 12.12.18 find better way to get toString of RdfNodes
+        if (bytes.length == 0) return new byte[0];
 
+        Model model = RDFUtility.deserialize(bytes);
         StmtIterator stmtIterator = model.listStatements();
         QuerySolutionMap mp = new QuerySolutionMap();
         int cnt = 0;
         StringBuilder triples = new StringBuilder();
         while (stmtIterator.hasNext()) {
-            if (cnt > 50) {
+            if (cnt > 20) {
                 runWriteQuery(triples, mp);
                 triples = new StringBuilder();
                 mp = new QuerySolutionMap();
@@ -97,29 +82,47 @@ public class TripleStoreWriter {
                     .append(o).append(" . ");
         }
 
-        runWriteQuery(triples, mp);
+        if (runWriteQuery(triples, mp))
+            return bytes;
+        return new byte[0];
     }
 
-    @Retryable(maxAttempts = 3, backoff = @Backoff(delay = 2))
-    private void runWriteQuery(StringBuilder triples, QuerySolutionMap mp) {
+    private org.apache.http.auth.Credentials credentials;
+
+    private boolean runWriteQuery(StringBuilder triples, QuerySolutionMap mp) {
         try {
-
-            ParameterizedSparqlString pss = new ParameterizedSparqlString("INSERT DATA { graph <http://projekt-opal.de> {" + triples + "}}");
+            ParameterizedSparqlString pss = new ParameterizedSparqlString("INSERT DATA { GRAPH <http://projekt-opal.de> {" + triples + "} }");
             pss.setParams(mp);
-
 
             String query = pss.toString();
             logger.debug("writing query is: {}", query);
-            UpdateRequest request = UpdateFactory.create(query);
-            UpdateProcessor proc = UpdateExecutionFactory.createRemote(request, tripleStoreURL);
-            try {
-                proc.execute();
-            } catch (Exception e) {
-                logger.error("An error occurred in writing to TripleStore ", e);
-            }
+            runInsertQuery(query);
+            return true;
         } catch (Exception e) {
             logger.error("An error occurred in writing to TripleStore ", e);
         }
+        return false;
     }
 
+    @Retryable(maxAttempts = 3, backoff = @Backoff(delay = 200))
+    private void runInsertQuery(String query) {
+        UpdateRequest request = UpdateFactory.create(query);
+        UpdateProcessor proc = UpdateExecutionFactory.createRemoteForm(request, tripleStoreURL, client);
+        proc.execute();
+    }
+
+    @Override
+    public void setCredentials(AuthScope authScope, Credentials credentials) {
+
+    }
+
+    @Override
+    public Credentials getCredentials(AuthScope authScope) {
+        return credentials;
+    }
+
+    @Override
+    public void clear() {
+
+    }
 }
