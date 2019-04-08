@@ -46,7 +46,7 @@ public class TripleStoreWriter implements CredentialsProvider {
     }
 
     @JmsListener(destination = "writerQueue", containerFactory = "messageFactory")
-    @SendTo("fileQueue")
+    @SendTo("ckanQueue")
     public byte[] writeToTripleStore(byte[] bytes) {
 
         // TODO: 12.12.18 find better way to get toString of RdfNodes
