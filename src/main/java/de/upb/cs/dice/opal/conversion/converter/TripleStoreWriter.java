@@ -25,6 +25,8 @@ import org.springframework.retry.annotation.Retryable;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.stereotype.Component;
 
+import java.nio.charset.StandardCharsets;
+
 @Component
 @EnableScheduling
 @EnableRetry
@@ -50,7 +52,7 @@ public class TripleStoreWriter implements CredentialsProvider {
     public byte[] writeToTripleStore(byte[] bytes) {
 
         // TODO: 12.12.18 find better way to get toString of RdfNodes
-        if (bytes.length == 0) return new byte[0];
+        if (bytes == null) return null;
 
         Model model = RDFUtility.deserialize(bytes);
         StmtIterator stmtIterator = model.listStatements();
@@ -84,7 +86,7 @@ public class TripleStoreWriter implements CredentialsProvider {
 
         if (runWriteQuery(triples, mp))
             return bytes;
-        return new byte[0];
+        return null;
     }
 
     private org.apache.http.auth.Credentials credentials;
@@ -95,6 +97,7 @@ public class TripleStoreWriter implements CredentialsProvider {
             pss.setParams(mp);
 
             String query = pss.toString();
+            query = new String(query.getBytes(StandardCharsets.UTF_8), StandardCharsets.UTF_8); // TODO: 17.04.19 check to make sure that it is OK
             logger.debug("writing query is: {}", query);
             runInsertQuery(query);
             return true;

@@ -47,7 +47,7 @@ public class QualityMetricsCalculator {
             logger.error("An error occurred in CIVET", e);
 
         }
-        return new byte[0];
+        return null;
         //CIVET quality metrics calculator is called
     }
 

@@ -11,7 +11,6 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.jena.rdf.model.*;
-import org.apache.jena.riot.Lang;
 import org.apache.jena.riot.RDFDataMgr;
 import org.apache.jena.sparql.vocabulary.FOAF;
 import org.apache.jena.vocabulary.*;
@@ -21,6 +20,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jms.annotation.JmsListener;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -40,11 +40,11 @@ public class CKANWriter {
 
     private static final Logger logger = LoggerFactory.getLogger(CKANWriter.class);
 
-    public static final int EMPTY_JSON_LENGTH = 2;
+    private static final int EMPTY_JSON_LENGTH = 2;
 
-    @Value("ckan.url")
+    @Value("${ckan.url}")
     public String CKAN_URL;
-    @Value("ckan.api_key")
+    @Value("${ckan.api_key}")
     private String API_KEY;
 
     //cache variables
@@ -73,17 +73,16 @@ public class CKANWriter {
     private static final Property SPDX_CHECKSUMVALUE_PROPERTY = ResourceFactory.createProperty("http://spdx.org/rdf/terms#checksumValue");
 
 
-
-
-    public CKANWriter() {
-        licenseRegister();
-    }
-
     @JmsListener(destination = "ckanQueue", containerFactory = "messageFactory")
     public void dump(byte[] bytes) {
         try {
-            if (bytes.length == 0) return;
+            if (bytes == null) return;
             Model model = RDFUtility.deserialize(bytes);
+//            try (OutputStream outputStream = new FileOutputStream("/home/afshin/Desktop/c.ttl")){
+//                model.write(outputStream, "turtle");
+//            } catch (Exception e) {
+//                e.printStackTrace();
+//            }
             String json = getModelJson(model);
             String url = CKAN_URL + "/api/3/action/package_create";
             fireAndForgetCallPostCKAN(url, json);
@@ -159,6 +158,7 @@ public class CKANWriter {
     }
 
 
+    @PostConstruct
     private void licenseRegister() {
         try {
             String apiUrl = CKAN_URL + "/api/3/action/license_list";
@@ -228,8 +228,11 @@ public class CKANWriter {
                             Resource license = licenseNode.asResource();
                             dict.append(String.format(",\"%s\":\"%s\"", "license", license.getURI()));
                             String license_id = license_uri2id.get(license.getURI());
-                            if (license_id == null)
-                                license_id = license_title2id.get(getObjectValue(model, license, DCTerms.title));
+                            if (license_id == null) {
+                                String licenseTitle = getObjectValue(model, license, DCTerms.title);
+                                if (licenseTitle != null)
+                                    license_id = license_title2id.get(licenseTitle);
+                            }
                             if (license_id != null) {
                                 licenseIsSet = true;
                                 json.append(String.format(",\"%s\":\"%s\"", "license_id", license_id));
@@ -657,7 +660,10 @@ public class CKANWriter {
             HttpPost httpPost = new HttpPost(apiUrl);
             httpPost.setHeader("Authorization", API_KEY);
             httpPost.setHeader("Content-type", "application/json");
-            httpPost.setEntity(new StringEntity(json));
+            httpPost.setHeader("Accept", "*/*");
+            httpPost.setHeader("User-Agent", "Mozilla/5.0");
+            httpPost.setHeader("cache-control","no-cache");
+            httpPost.setEntity(new StringEntity(json, "UTF-8"));
             CloseableHttpResponse response = client.execute(httpPost);
             int statusCode = response.getStatusLine().getStatusCode();
             if (statusCode != 200)
@@ -753,5 +759,20 @@ public class CKANWriter {
             ret.add(rdfNode.asResource().getURI());
         }
         return ret;
+    }
+
+    public static void main(String[] args) {
+        try {
+            Model model = RDFDataMgr.loadModel("/home/afshin/Desktop/c.ttl");
+            CKANWriter ckanWriter = new CKANWriter();
+            ckanWriter.CKAN_URL= "http://localhost:5000";
+            ckanWriter.API_KEY = "bd79d579-290d-4f72-9d74-d81aa41f4243";
+            ckanWriter.licenseRegister();
+            String json = ckanWriter.getModelJson(model);
+            String url =  "http://localhost:5000" + "/api/3/action/package_create";
+            ckanWriter.fireAndForgetCallPostCKAN(url, json);
+        } catch (Exception e) {
+            logger.error("An error occurred in dumping model", e);
+        }
     }
 }
