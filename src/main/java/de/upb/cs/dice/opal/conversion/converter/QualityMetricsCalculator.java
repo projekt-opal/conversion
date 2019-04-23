@@ -40,7 +40,7 @@ public class QualityMetricsCalculator {
                     byte[] serialize = RDFUtility.serialize(model);
                     return serialize;
                 } catch (Exception ex) {
-                    logger.error("An error occurred in CIVET for ", dataSet, ex);
+                    logger.error("An error occurred in CIVET for {} {}", dataSet, ex);
                 }
             }
         } catch (Exception e) {

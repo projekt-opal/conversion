@@ -11,7 +11,6 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.jena.rdf.model.*;
-import org.apache.jena.riot.RDFDataMgr;
 import org.apache.jena.sparql.vocabulary.FOAF;
 import org.apache.jena.vocabulary.*;
 import org.slf4j.Logger;
@@ -46,6 +45,8 @@ public class CKANWriter {
     public String CKAN_URL;
     @Value("${ckan.api_key}")
     private String API_KEY;
+    @Value("${duplicateName.appendNumber}")
+    private boolean appendNumber;
 
     //cache variables
     private String vocabulary_id = null;
@@ -78,11 +79,6 @@ public class CKANWriter {
         try {
             if (bytes == null) return;
             Model model = RDFUtility.deserialize(bytes);
-//            try (OutputStream outputStream = new FileOutputStream("/home/afshin/Desktop/c.ttl")){
-//                model.write(outputStream, "turtle");
-//            } catch (Exception e) {
-//                e.printStackTrace();
-//            }
             String json = getModelJson(model);
             String url = CKAN_URL + "/api/3/action/package_create";
             fireAndForgetCallPostCKAN(url, json);
@@ -94,9 +90,7 @@ public class CKANWriter {
 
     public String getModelJson(Model model) {
 
-//        Map<String, String> json = new HashMap<>();
         StringBuilder json = new StringBuilder("{");
-//        Map<String, String> extras = new HashMap<>();
         StringBuilder extras = new StringBuilder("[");
 
         ResIterator resIterator = model.listResourcesWithProperty(RDF.type, DCAT.Dataset);
@@ -330,9 +324,26 @@ public class CKANWriter {
     private void setName(Model model, Resource dataset, StringBuilder json) {
         String title = getObjectValue(model, dataset, DCTerms.title);
         if (title != null) {
-            String name = title.substring(0, Math.min(98, title.length())).toLowerCase().replaceAll("[^a-z0-9_\\-]", "_");
+            String tempName = title.substring(0, Math.min(97, title.length())).toLowerCase().replaceAll("[^a-z0-9_\\-]", "_");
+            String name = tempName;
+            if (appendNumber) {
+                int cnt = 0;
+                while (isNameRepetitive(name) && cnt < 99)
+                    name = tempName + "_" + ++cnt;
+            }
             json.append(String.format("%s\"%s\":\"%s\"", json.length() > EMPTY_JSON_LENGTH ? "," : "", "name", name.replace("\"", "\\\"")));
         }
+    }
+
+    private boolean isNameRepetitive(String name) {
+        String apiUrl = CKAN_URL + "/api/3/action/package_show?id=" + name;
+        try {
+            JsonObject jobject = getJsonObjectFromAPI(apiUrl);
+            return jobject.get("success").getAsBoolean();
+        } catch (IOException e) {
+            //ignored : When it is not there, some times it throws file not found
+        }
+        return false;
     }
 
     private void setTemporals(Model model, Resource dataset, StringBuilder extras) {
@@ -508,7 +519,8 @@ public class CKANWriter {
         if (this.groups.containsKey(theme)) return;
         String apiUrl = CKAN_URL + "/api/3/action/group_create";
         List<NameValuePair> params = new ArrayList<>();
-        String groupName = theme.substring(0, Math.min(100, theme.length())).toLowerCase().replaceAll("[^a-z0-9_\\-]", "_");;
+        String groupName = theme.substring(0, Math.min(100, theme.length())).toLowerCase().replaceAll("[^a-z0-9_\\-]", "_");
+        ;
         params.add(new BasicNameValuePair("name", groupName));
         params.add(new BasicNameValuePair("display_name", theme));
         params.add(new BasicNameValuePair("title", theme));
@@ -522,7 +534,7 @@ public class CKANWriter {
                 throw new Exception("success is false");
             }
         } catch (Exception ex) {
-            logger.error("Exception in createGroup", theme, ex);
+            logger.error("Exception in createGroup {} {}", theme, ex);
         }
     }
 
@@ -673,15 +685,12 @@ public class CKANWriter {
             httpPost.setHeader("Content-type", "application/json");
             httpPost.setHeader("Accept", "*/*");
             httpPost.setHeader("User-Agent", "Mozilla/5.0");
-            httpPost.setHeader("cache-control","no-cache");
+            httpPost.setHeader("cache-control", "no-cache");
             httpPost.setEntity(new StringEntity(json, "UTF-8"));
             CloseableHttpResponse response = client.execute(httpPost);
             int statusCode = response.getStatusLine().getStatusCode();
-            if (statusCode != 200) {
-                logger.error("status code is not 200, response = " + response);
-            }
-            if(statusCode == 400) //todo remove me
-                logger.error("Error 400: {}", json);
+            if (statusCode != 200)
+                logger.error("status code is not 200, json= {}, response = {}", json, response);
         } catch (IOException e) {
             logger.error("Error in calling CKAN POST CALL", e);
         }
@@ -732,7 +741,7 @@ public class CKANWriter {
         HttpURLConnection con = (HttpURLConnection) obj.openConnection();
         con.setRequestMethod("GET");
         con.setRequestProperty("User-Agent", "Mozilla/5.0");
-        con.getResponseCode();
+//        con.getResponseCode();
 
         BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
         String inputLine;
