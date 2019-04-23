@@ -331,7 +331,7 @@ public class CKANWriter {
         String title = getObjectValue(model, dataset, DCTerms.title);
         if (title != null) {
             String name = title.substring(0, Math.min(98, title.length())).toLowerCase().replaceAll("[^a-z0-9_\\-]", "_");
-            json.append(String.format("%s\"%s\":\"%s\"", json.length() > EMPTY_JSON_LENGTH ? "," : "", "name", name));
+            json.append(String.format("%s\"%s\":\"%s\"", json.length() > EMPTY_JSON_LENGTH ? "," : "", "name", name.replace("\"", "\\\"")));
         }
     }
 
@@ -339,10 +339,10 @@ public class CKANWriter {
         String[] temporals = time_interval(model, dataset);
         if (temporals[0] != null)
             extras.append(String.format("%s{\"key\":\"%s\", \"value\":\"%s\"}",
-                    extras.length() > EMPTY_JSON_LENGTH ? "," : "", "temporal_start", temporals[0]));
+                    extras.length() > EMPTY_JSON_LENGTH ? "," : "", "temporal_start", temporals[0].replace("\"", "\\\"")));
         if (temporals[1] != null)
             extras.append(String.format("%s{\"key\":\"%s\", \"value\":\"%s\"}",
-                    extras.length() > EMPTY_JSON_LENGTH ? "," : "", "temporal_end", temporals[1]));
+                    extras.length() > EMPTY_JSON_LENGTH ? "," : "", "temporal_end", temporals[1].replace("\"", "\\\"")));
     }
 
     private void setThemes(Model model, Resource dataset, StringBuilder json) {
@@ -389,17 +389,17 @@ public class CKANWriter {
             if (rdfNode.isResource()) {
                 Resource contact = rdfNode.asResource();
                 extras.append(String.format("%s{\"key\":\"%s\", \"value\":\"%s\"}",
-                        extras.length() > EMPTY_JSON_LENGTH ? "," : "", "contact_uri", contact.getURI()));
+                        extras.length() > EMPTY_JSON_LENGTH ? "," : "", "contact_uri", contact.getURI().replace("\"", "\\\"")));
                 String name = getObjectValue(model, contact, VCARD4.fn);
                 if (name != null)
                     extras.append(String.format("%s{\"key\":\"%s\", \"value\":\"%s\"}",
-                            extras.length() > EMPTY_JSON_LENGTH ? "," : "", "contact_name", name));
+                            extras.length() > EMPTY_JSON_LENGTH ? "," : "", "contact_name", name.replace("\"", "\\\"")));
                 String email = getObjectValue(model, contact, VCARD4.hasEmail);
                 if (email != null) {
                     if (email.startsWith("mailto:"))
                         email = email.substring("mailto:".length());
                     extras.append(String.format("%s{\"key\":\"%s\", \"value\":\"%s\"}",
-                            extras.length() > EMPTY_JSON_LENGTH ? "," : "", "contact_email", email));
+                            extras.length() > EMPTY_JSON_LENGTH ? "," : "", "contact_email", email.replace("\"", "\\\"")));
                 }
             }
         }
@@ -412,23 +412,23 @@ public class CKANWriter {
             if (rdfNode.isResource()) {
                 Resource agent = rdfNode.asResource();
                 extras.append(String.format("%s{\"key\":\"%s\", \"value\":\"%s\"}",
-                        extras.length() > EMPTY_JSON_LENGTH ? "," : "", "publisher_uri", agent.getURI()));
+                        extras.length() > EMPTY_JSON_LENGTH ? "," : "", "publisher_uri", agent.getURI().replace("\"", "\\\"")));
                 String foafName = getObjectValue(model, agent, FOAF.name);
                 if (foafName != null)
                     extras.append(String.format("%s{\"key\":\"%s\", \"value\":\"%s\"}",
-                            extras.length() > EMPTY_JSON_LENGTH ? "," : "", "publisher_name", foafName));
+                            extras.length() > EMPTY_JSON_LENGTH ? "," : "", "publisher_name", foafName.replace("\"", "\\\"")));
                 String foafMbox = getObjectValue(model, agent, FOAF.mbox);
                 if (foafMbox != null)
                     extras.append(String.format("%s{\"key\":\"%s\", \"value\":\"%s\"}",
-                            extras.length() > EMPTY_JSON_LENGTH ? "," : "", "publisher_email", foafMbox));
+                            extras.length() > EMPTY_JSON_LENGTH ? "," : "", "publisher_email", foafMbox.replace("\"", "\\\"")));
                 String foafHomePage = getObjectValue(model, agent, FOAF.homepage);
                 if (foafHomePage != null)
                     extras.append(String.format("%s{\"key\":\"%s\", \"value\":\"%s\"}",
-                            extras.length() > EMPTY_JSON_LENGTH ? "," : "", "publisher_url", foafHomePage));
+                            extras.length() > EMPTY_JSON_LENGTH ? "," : "", "publisher_url", foafHomePage.replace("\"", "\\\"")));
                 String dctType = getObjectValue(model, agent, DCTerms.type);
                 if (dctType != null)
                     extras.append(String.format("%s{\"key\":\"%s\", \"value\":\"%s\"}",
-                            extras.length() > EMPTY_JSON_LENGTH ? "," : "", "publisher_type", dctType));
+                            extras.length() > EMPTY_JSON_LENGTH ? "," : "", "publisher_type", dctType.replace("\"", "\\\"")));
             }
         }
     }
@@ -489,13 +489,13 @@ public class CKANWriter {
     private void setStringValue(Model model, Resource subject, StringBuilder json, Property property, String key) {
         String value = getObjectValue(model, subject, property);
         if (value != null)
-            json.append(String.format("%s\"%s\":\"%s\"", json.length() > EMPTY_JSON_LENGTH ? "," : "", key, value));
+            json.append(String.format("%s\"%s\":\"%s\"", json.length() > EMPTY_JSON_LENGTH ? "," : "", key, value.replace("\"", "\\\"")));
     }
 
     private void setExtrasStringValue(Model model, Resource subject, StringBuilder extras, Property property, String key) {
         String value = getObjectValue(model, subject, property);
         if (value != null) extras.append(String.format("%s{\"key\":\"%s\", \"value\":\"%s\"}",
-                extras.length() > EMPTY_JSON_LENGTH ? "," : "", key, value));
+                extras.length() > EMPTY_JSON_LENGTH ? "," : "", key, value.replace("\"", "\\\"")));
     }
 
     private String getOrCreateGroupJson(String theme) {
@@ -504,10 +504,11 @@ public class CKANWriter {
         return groups.get(theme);
     }
 
-    private void createGroup(String theme) {
+    private synchronized void createGroup(String theme) {
+        if (this.groups.containsKey(theme)) return;
         String apiUrl = CKAN_URL + "/api/3/action/group_create";
         List<NameValuePair> params = new ArrayList<>();
-        String groupName = theme.substring(0, Math.min(100, theme.length())).toLowerCase();
+        String groupName = theme.substring(0, Math.min(100, theme.length())).toLowerCase().replaceAll("[^a-z0-9_\\-]", "_");;
         params.add(new BasicNameValuePair("name", groupName));
         params.add(new BasicNameValuePair("display_name", theme));
         params.add(new BasicNameValuePair("title", theme));
@@ -516,17 +517,19 @@ public class CKANWriter {
             if (jobject.get("success").getAsBoolean()) {
                 Map<String, String> tmp = new HashMap<>();
                 tmp.put("name", groupName);
-                this.tags.put(theme, new Gson().toJson(tmp));
+                this.groups.put(theme, new Gson().toJson(tmp));
             } else {
                 throw new Exception("success is false");
             }
         } catch (Exception ex) {
-            logger.error("Exception in createGroup", ex);
+            logger.error("Exception in createGroup", theme, ex);
         }
     }
 
-    private void syncGroupsCache() {
+    private synchronized void syncGroupsCache() {
         try {
+            if (this.groups.size() != 0) return;
+            Map<String, String> tempGroups = new ConcurrentHashMap<>();
             String apiUrl = CKAN_URL + "/api/3/action/group_list";
             JsonObject jobject = getJsonObjectFromAPI(apiUrl);
             if (jobject.get("success").getAsBoolean()) {
@@ -537,14 +540,15 @@ public class CKANWriter {
                     if (groupDisplayName != null) {
                         Map<String, String> tmp = new HashMap<>();
                         tmp.put("name", groupString);
-                        this.groups.put(groupDisplayName, new Gson().toJson(tmp));
+                        tempGroups.put(groupDisplayName, new Gson().toJson(tmp));
                     }
                 }
+                this.groups = tempGroups;
             } else {
                 throw new Exception("success is false");
             }
         } catch (Exception ex) {
-            logger.error("Error in fetching licenses ", ex);
+            logger.error("Error in syncGroupsCache ", ex);
         }
     }
 
@@ -571,14 +575,16 @@ public class CKANWriter {
         return ret;
     }
 
-    private synchronized String getOrCreateTagJson(String keyword) {
+    private String getOrCreateTagJson(String keyword) {
         if (this.tags.size() == 0) syncTagsCache();
         if (!this.tags.containsKey(keyword)) createTag(keyword);
         return tags.get(keyword);
     }
 
-    private void syncTagsCache() {
+    private synchronized void syncTagsCache() {
         try {
+            if (this.tags.size() != 0) return;
+            Map<String, String> tempTags = new ConcurrentHashMap<>();
             String apiUrl = CKAN_URL + "/api/3/action/tag_list?vocabulary_id=" + this.vocabulary_id;
             JsonObject jobject = getJsonObjectFromAPI(apiUrl);
             if (jobject.get("success").getAsBoolean()) {
@@ -590,9 +596,10 @@ public class CKANWriter {
                         Map<String, String> tmp = new HashMap<>();
                         tmp.put("name", tagString);
                         tmp.put("vocabulary_id", this.vocabulary_id);
-                        this.tags.put(displayName, new Gson().toJson(tmp));
+                        tempTags.put(displayName, new Gson().toJson(tmp));
                     }
                 }
+                this.tags = tempTags;
             } else {
                 throw new Exception("success is false");
             }
@@ -611,10 +618,11 @@ public class CKANWriter {
         return null;
     }
 
-    private void createTag(String keyword) {
+    private synchronized void createTag(String keyword) {
+        if (this.tags.containsKey(keyword)) return;
         String apiUrl = CKAN_URL + "/api/3/action/tag_create";
         List<NameValuePair> params = new ArrayList<>();
-        String tagName = keyword.substring(0, Math.min(100, keyword.length())).toLowerCase();
+        String tagName = keyword.substring(0, Math.min(100, keyword.length())).toLowerCase().replaceAll("[^a-z0-9_\\-]", "_");
         params.add(new BasicNameValuePair("name", tagName));
         params.add(new BasicNameValuePair("display_name", keyword));
         params.add(new BasicNameValuePair("vocabulary_id", this.vocabulary_id));
@@ -643,7 +651,10 @@ public class CKANWriter {
             httpPost.setEntity(new UrlEncodedFormEntity(params));
             CloseableHttpResponse response = client.execute(httpPost);
             int statusCode = response.getStatusLine().getStatusCode();
-            if (statusCode != 200) throw new Exception("status code is not 200, status code = " + statusCode);
+            if (statusCode != 200) {
+                logger.error("status code is not 200, {}", response);
+                throw new Exception("status code is not 200, status code = " + statusCode);
+            }
             InputStream content = response.getEntity().getContent();
             BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(content));
             StringBuilder jsonLine = new StringBuilder();
@@ -666,8 +677,11 @@ public class CKANWriter {
             httpPost.setEntity(new StringEntity(json, "UTF-8"));
             CloseableHttpResponse response = client.execute(httpPost);
             int statusCode = response.getStatusLine().getStatusCode();
-            if (statusCode != 200)
-                logger.error("status code is not 200, status code = " + statusCode);
+            if (statusCode != 200) {
+                logger.error("status code is not 200, response = " + response);
+            }
+            if(statusCode == 400) //todo remove me
+                logger.error("Error 400: {}", json);
         } catch (IOException e) {
             logger.error("Error in calling CKAN POST CALL", e);
         }
@@ -766,7 +780,7 @@ public class CKANWriter {
             Model model = RDFDataMgr.loadModel("/home/afshin/Desktop/c.ttl");
             CKANWriter ckanWriter = new CKANWriter();
             ckanWriter.CKAN_URL= "http://localhost:5000";
-            ckanWriter.API_KEY = "bd79d579-290d-4f72-9d74-d81aa41f4243";
+            ckanWriter.API_KEY = "c2179305-96ba-4874-a276-fedc4819c29c";
             ckanWriter.licenseRegister();
             String json = ckanWriter.getModelJson(model);
             String url =  "http://localhost:5000" + "/api/3/action/package_create";
