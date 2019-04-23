@@ -775,18 +775,4 @@ public class CKANWriter {
         return ret;
     }
 
-    public static void main(String[] args) {
-        try {
-            Model model = RDFDataMgr.loadModel("/home/afshin/Desktop/c.ttl");
-            CKANWriter ckanWriter = new CKANWriter();
-            ckanWriter.CKAN_URL= "http://localhost:5000";
-            ckanWriter.API_KEY = "c2179305-96ba-4874-a276-fedc4819c29c";
-            ckanWriter.licenseRegister();
-            String json = ckanWriter.getModelJson(model);
-            String url =  "http://localhost:5000" + "/api/3/action/package_create";
-            ckanWriter.fireAndForgetCallPostCKAN(url, json);
-        } catch (Exception e) {
-            logger.error("An error occurred in dumping model", e);
-        }
-    }
 }
