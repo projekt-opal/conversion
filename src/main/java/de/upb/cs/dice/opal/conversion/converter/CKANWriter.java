@@ -1,9 +1,11 @@
 package de.upb.cs.dice.opal.conversion.converter;
 
 
-import org.apache.jena.rdf.model.Model;
+import org.apache.jena.rdf.model.*;
+import org.dice_research.opal.common.vocabulary.Dqv;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jms.annotation.JmsListener;
 import org.springframework.stereotype.Component;
@@ -18,12 +20,19 @@ public class CKANWriter {
 
     private JenaModelToDcatJsonConverter jenaModelToDcatJsonConverter;
 
+    private QualityMetricsConfiguration qualityMetricsConfiguration;
+
     @Value("${ckan.url}")
     private String CKAN_URL;
     @Value("${ckan.api_key}")
     private String API_KEY;
     @Value("${duplicateName.appendNumber}")
     private boolean appendNumber;
+
+    @Autowired
+    public CKANWriter(QualityMetricsConfiguration qualityMetricsConfiguration) {
+        this.qualityMetricsConfiguration = qualityMetricsConfiguration;
+    }
 
     @PostConstruct
     public void initialize() {
@@ -40,6 +49,8 @@ public class CKANWriter {
             StringBuilder json = modelJson.getKey();
             StringBuilder extras = modelJson.getValue();
 
+            addQualityMetrics(extras, model);
+
             json.append(String.format(",\"%s\":[%s]", "extras", extras));
             String payload = String.format("{%s}", json);
 
@@ -51,5 +62,29 @@ public class CKANWriter {
         }
     }
 
+    private void addQualityMetrics(StringBuilder extras, Model model) {
+        qualityMetricsConfiguration.getMeasurementResource().forEach((key, resource) -> {
+//            NodeIterator nodeIterator = model.listObjectsOfProperty(measurementProperty);
+            ResIterator resIterator =
+                    model.listResourcesWithProperty(Dqv.IS_MEASUREMENT_OF, ResourceFactory.createResource(resource));
+            if (resIterator.hasNext()) {
+                Resource measurement = resIterator.nextResource();
+                NodeIterator nodeIterator = model.listObjectsOfProperty(measurement, Dqv.HAS_VALUE);
+                if (nodeIterator.hasNext()) {
+                    RDFNode rdfNode = nodeIterator.nextNode();
+                    if (rdfNode.isLiteral()) {
+                        try {
+                            extras.append(String.format("%s{\"key\":\"%s\", \"value\":\"%s\"}",
+                                    extras.length() > 0 ? "," : "",
+                                    qualityMetricsConfiguration.getMeasurementName().get(key),
+                                    rdfNode.asLiteral().getString()));
+                        } catch (Exception e) {
+                            //ignore
+                        }
+                    }
+                }
+            }
+        });
+    }
 
 }

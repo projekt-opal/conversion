@@ -6,6 +6,7 @@ import org.apache.jena.rdf.model.impl.StatementImpl;
 import org.apache.jena.vocabulary.DCAT;
 import org.apache.jena.vocabulary.RDF;
 import org.dice_research.opal.civet.CivetApi;
+import org.dice_research.opal.common.vocabulary.Dqv;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.jms.annotation.JmsListener;
@@ -20,7 +21,6 @@ import java.util.concurrent.atomic.AtomicLong;
 public class QualityMetricsCalculator {
     private static final Logger logger = LoggerFactory.getLogger(QualityMetricsCalculator.class);
 
-    private static final Property measurementProperty = ResourceFactory.createProperty("http://www.w3.org/ns/dqv#hasQualityMeasurement");
     private static AtomicLong measurementCounter = new AtomicLong();
 
 
@@ -53,7 +53,7 @@ public class QualityMetricsCalculator {
 
     private void makeOpalConfirmedQualityMeasurements(Model model, Resource dataSet) {
         List<Statement> qualityMeasurementStmtIterator = model.listStatements(
-                new SimpleSelector(dataSet, measurementProperty, (RDFNode) null)).toList();
+                new SimpleSelector(dataSet, Dqv.HAS_QUALITY_MEASUREMENT, (RDFNode) null)).toList();
         for (Statement statement : qualityMeasurementStmtIterator) {
             Resource oldMeasurementResource = statement.getObject().asResource();
             long number = measurementCounter.incrementAndGet();
@@ -69,8 +69,8 @@ public class QualityMetricsCalculator {
             model.remove(oldIterator);
             model.add(newResourceStatements);
 
-            model.remove(dataSet, measurementProperty, oldMeasurementResource);
-            model.add(dataSet, measurementProperty, newMeasurementResource);
+            model.remove(dataSet, Dqv.HAS_QUALITY_MEASUREMENT, oldMeasurementResource);
+            model.add(dataSet, Dqv.HAS_QUALITY_MEASUREMENT, newMeasurementResource);
         }
     }
 }
