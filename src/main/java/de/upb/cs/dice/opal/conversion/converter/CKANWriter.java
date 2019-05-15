@@ -20,24 +20,26 @@ public class CKANWriter {
 
     private JenaModelToDcatJsonConverter jenaModelToDcatJsonConverter;
 
-    private QualityMetricsConfiguration qualityMetricsConfiguration;
+    private final QualityMetricsConfiguration qualityMetricsConfiguration;
+    private final CKAN_Config ckanConfig;
 
     @Value("${ckan.url}")
     private String CKAN_URL;
-    @Value("${ckan.api_key}")
-    private String API_KEY;
+//    @Value("${ckan.api_key}")
+//    private String API_KEY;
     @Value("${duplicateName.appendNumber}")
     private boolean appendNumber;
 
     @Autowired
-    public CKANWriter(QualityMetricsConfiguration qualityMetricsConfiguration) {
+    public CKANWriter(QualityMetricsConfiguration qualityMetricsConfiguration, CKAN_Config ckanConfig) {
         this.qualityMetricsConfiguration = qualityMetricsConfiguration;
+        this.ckanConfig = ckanConfig;
     }
 
-    @PostConstruct
-    public void initialize() {
-        jenaModelToDcatJsonConverter = new JenaModelToDcatJsonConverter(CKAN_URL, API_KEY, appendNumber);
-    }
+//    @PostConstruct
+//    public void initialize() {
+//        jenaModelToDcatJsonConverter = new JenaModelToDcatJsonConverter(CKAN_URL, ckanConfig.getApiKey(), appendNumber);
+//    }
 
 
     @JmsListener(destination = "ckanQueue", containerFactory = "messageFactory")
@@ -45,6 +47,14 @@ public class CKANWriter {
         try {
             if (bytes == null) return;
             Model model = RDFUtility.deserialize(bytes);
+
+            if(jenaModelToDcatJsonConverter == null) {
+                synchronized (this) {
+                    if(jenaModelToDcatJsonConverter == null)
+                        jenaModelToDcatJsonConverter = new JenaModelToDcatJsonConverter(CKAN_URL, ckanConfig.getApiKey(), appendNumber);
+                }
+            }
+
             AbstractMap.SimpleEntry<StringBuilder, StringBuilder> modelJson = jenaModelToDcatJsonConverter.getModelJson(model);
             StringBuilder json = modelJson.getKey();
             StringBuilder extras = modelJson.getValue();
