@@ -34,8 +34,8 @@ public class JenaModelToDcatJsonConverter {
     private boolean appendNumber;
 
     private String vocabulary_id = null;
-    private Map<String, String> tags = new ConcurrentHashMap<>();
-    private Map<String, String> groups = new ConcurrentHashMap<>();
+    private Map<String, String> tags = new HashMap<>();
+    private Map<String, String> groups = new HashMap<>();
     private Map<String, String> license_uri2id = new ConcurrentHashMap<>();
     private Map<String, String> license_title2id = new ConcurrentHashMap<>();
 
@@ -103,7 +103,7 @@ public class JenaModelToDcatJsonConverter {
         //endregion
 
         //region special_cases
-        json.append(String.format("%s\"%s\":\"%s\"", json.length() > 1 ? "," : "", "owner_org", "diceupb"));
+        json.append(String.format("%s\"%s\":\"%s\"", json.length() > EMPTY_JSON_LENGTH ? "," : "", "owner_org", "diceupb"));
         setName(model, dataset, json); //name mst be less than 100 and all lower-case, the rest 2 characters are left for incremental the same dataset name
         setKeywords(model, dataset, json); //dcat:keyword => tags
         setThemes(model, dataset, json); //dcat:theme => extra:theme, but groups is used anywhere
@@ -206,7 +206,7 @@ public class JenaModelToDcatJsonConverter {
                         RDFNode licenseNode = licenseIterator.nextNode();
                         if (licenseNode.isResource()) {
                             Resource license = licenseNode.asResource();
-                            dict.append(String.format(",\"%s\":\"%s\"", "license", license.getURI()));
+                            dict.append(String.format("%s\"%s\":\"%s\"", dict.length() > EMPTY_JSON_LENGTH ? "," : "", "license", license.getURI()));
                             String license_id = license_uri2id.get(license.getURI());
                             if (license_id == null) {
                                 String licenseTitle = getObjectValue(model, license, DCTerms.title);
@@ -215,12 +215,12 @@ public class JenaModelToDcatJsonConverter {
                             }
                             if (license_id != null) {
                                 licenseIsSet = true;
-                                json.append(String.format(",\"%s\":\"%s\"", "license_id", license_id));
+                                json.append(String.format("%s\"%s\":\"%s\"", json.length() > EMPTY_JSON_LENGTH ? "," : "", "license_id", license_id));
                             }
 
                         } else if (licenseNode.isLiteral()) {
                             String value = licenseNode.asLiteral().getString();
-                            dict.append(String.format(",\"%s\":\"%s\"", "license", value));
+                            dict.append(String.format("%s\"%s\":\"%s\"", dict.length() > EMPTY_JSON_LENGTH ? "," : "", "license", value));
                         }
                     }
                 } else {
@@ -233,8 +233,8 @@ public class JenaModelToDcatJsonConverter {
                 String downloadUrl = getObjectValue(model, distribution, DCAT.downloadURL);
                 String accessUrl = getObjectValue(model, distribution, DCAT.accessURL);
 
-                if (downloadUrl != null) dict.append(String.format(",\"%s\":\"%s\"", "url", downloadUrl));
-                else if (accessUrl != null) dict.append(String.format(",\"%s\":\"%s\"", "url", accessUrl));
+                if (downloadUrl != null) dict.append(String.format("%s\"%s\":\"%s\"", dict.length() > EMPTY_JSON_LENGTH ? "," : "", "url", downloadUrl));
+                else if (accessUrl != null) dict.append(String.format("%s\"%s\":\"%s\"", dict.length() > EMPTY_JSON_LENGTH ? "," : "", "url", accessUrl));
 
                 setFileFormat(model, distribution, dict);
                 setStringValue(model, distribution, dict, DCAT.byteSize, "size");
@@ -308,14 +308,14 @@ public class JenaModelToDcatJsonConverter {
     private void setName(Model model, Resource dataset, StringBuilder json) {
         String title = getObjectValue(model, dataset, DCTerms.title);
         if (title != null) {
-            String tempName = title.substring(0, Math.min(97, title.length())).toLowerCase().replaceAll("[^a-z0-9_\\-]", "_");
+            String tempName = adjustNameForCkan(title, 97);
             String name = tempName;
             if (appendNumber) {
                 int cnt = 0;
                 while (isNameRepetitive(name) && cnt < 99)
                     name = tempName + "_" + ++cnt;
             }
-            json.append(String.format("%s\"%s\":\"%s\"", json.length() > EMPTY_JSON_LENGTH ? "," : "", "name", name.replace("\"", "\\\"")));
+            json.append(String.format("%s\"%s\":%s", json.length() > EMPTY_JSON_LENGTH ? "," : "", "name", makeJsonFriendly(name)));
         }
     }
 
@@ -333,11 +333,11 @@ public class JenaModelToDcatJsonConverter {
     private void setTemporals(Model model, Resource dataset, StringBuilder extras) {
         String[] temporals = time_interval(model, dataset);
         if (temporals[0] != null)
-            extras.append(String.format("%s{\"key\":\"%s\", \"value\":\"%s\"}",
-                    extras.length() > EMPTY_JSON_LENGTH ? "," : "", "temporal_start", temporals[0].replace("\"", "\\\"")));
+            extras.append(String.format("%s{\"key\":\"%s\", \"value\":%s}",
+                    extras.length() > EMPTY_JSON_LENGTH ? "," : "", "temporal_start", makeJsonFriendly(temporals[0])));
         if (temporals[1] != null)
-            extras.append(String.format("%s{\"key\":\"%s\", \"value\":\"%s\"}",
-                    extras.length() > EMPTY_JSON_LENGTH ? "," : "", "temporal_end", temporals[1].replace("\"", "\\\"")));
+            extras.append(String.format("%s{\"key\":\"%s\", \"value\":%s}",
+                    extras.length() > EMPTY_JSON_LENGTH ? "," : "", "temporal_end", makeJsonFriendly(temporals[1])));
     }
 
     private void setThemes(Model model, Resource dataset, StringBuilder json) {
@@ -361,7 +361,7 @@ public class JenaModelToDcatJsonConverter {
                 }
             }
             for (String keyword : keywords) tagsJson.add(getOrCreateTagJson(keyword));
-            json.append(String.format("\"%s\":%s,", "tags", getArrayJsonValue(tagsJson)));
+            json.append(String.format("%s\"%s\":%s", json.length() > EMPTY_JSON_LENGTH ? "," : "", "tags", getArrayJsonValue(tagsJson)));
         }
     }
 
@@ -383,21 +383,38 @@ public class JenaModelToDcatJsonConverter {
             RDFNode rdfNode = nodeIterator.nextNode();
             if (rdfNode.isResource()) {
                 Resource contact = rdfNode.asResource();
-                extras.append(String.format("%s{\"key\":\"%s\", \"value\":\"%s\"}",
-                        extras.length() > EMPTY_JSON_LENGTH ? "," : "", "contact_uri", contact.getURI().replace("\"", "\\\"")));
+                extras.append(String.format("%s{\"key\":\"%s\", \"value\":%s}",
+                        extras.length() > EMPTY_JSON_LENGTH ? "," : "", "contact_uri", makeJsonFriendly(contact.getURI())));
                 String name = getObjectValue(model, contact, VCARD4.fn);
                 if (name != null)
-                    extras.append(String.format("%s{\"key\":\"%s\", \"value\":\"%s\"}",
-                            extras.length() > EMPTY_JSON_LENGTH ? "," : "", "contact_name", name.replace("\"", "\\\"")));
+                    extras.append(String.format("%s{\"key\":\"%s\", \"value\":%s}",
+                            extras.length() > EMPTY_JSON_LENGTH ? "," : "", "contact_name", makeJsonFriendly(name)));
                 String email = getObjectValue(model, contact, VCARD4.hasEmail);
                 if (email != null) {
                     if (email.startsWith("mailto:"))
                         email = email.substring("mailto:".length());
-                    extras.append(String.format("%s{\"key\":\"%s\", \"value\":\"%s\"}",
-                            extras.length() > EMPTY_JSON_LENGTH ? "," : "", "contact_email", email.replace("\"", "\\\"")));
+                    extras.append(String.format("%s{\"key\":\"%s\", \"value\":%s}",
+                            extras.length() > EMPTY_JSON_LENGTH ? "," : "", "contact_email", makeJsonFriendly(email)));
                 }
             }
         }
+    }
+
+    private String makeJsonFriendly(String s) {
+//        return s
+//                .replace("\\", "\\\\")
+//                .replace("\"", "\\\"")
+////                .replace("\'", "\\\'") //do not needed
+//                .replace("\n", "\\\n")
+//                .replace("\b", "\\\b")
+//                .replace("\f", "\\\f")
+//                .replace("\r", "\\\r")
+//                .replace("\t", "\\\t")
+//                .replace("\t", "\\\t")
+//                ;
+//        String s1 = new Gson().toJson(s);
+//        s1 = s1.substring(1, -1 );
+        return new Gson().toJson(s);
     }
 
     private void setPublisherInfos(Model model, Resource dataset, StringBuilder extras) {
@@ -406,24 +423,24 @@ public class JenaModelToDcatJsonConverter {
             RDFNode rdfNode = nodeIterator.nextNode();
             if (rdfNode.isResource()) {
                 Resource agent = rdfNode.asResource();
-                extras.append(String.format("%s{\"key\":\"%s\", \"value\":\"%s\"}",
-                        extras.length() > EMPTY_JSON_LENGTH ? "," : "", "publisher_uri", agent.getURI().replace("\"", "\\\"")));
+                extras.append(String.format("%s{\"key\":\"%s\", \"value\":%s}",
+                        extras.length() > EMPTY_JSON_LENGTH ? "," : "", "publisher_uri", makeJsonFriendly(agent.getURI())));
                 String foafName = getObjectValue(model, agent, FOAF.name);
                 if (foafName != null)
-                    extras.append(String.format("%s{\"key\":\"%s\", \"value\":\"%s\"}",
-                            extras.length() > EMPTY_JSON_LENGTH ? "," : "", "publisher_name", foafName.replace("\"", "\\\"")));
+                    extras.append(String.format("%s{\"key\":\"%s\", \"value\":%s}",
+                            extras.length() > EMPTY_JSON_LENGTH ? "," : "", "publisher_name", makeJsonFriendly(foafName)));
                 String foafMbox = getObjectValue(model, agent, FOAF.mbox);
                 if (foafMbox != null)
-                    extras.append(String.format("%s{\"key\":\"%s\", \"value\":\"%s\"}",
-                            extras.length() > EMPTY_JSON_LENGTH ? "," : "", "publisher_email", foafMbox.replace("\"", "\\\"")));
+                    extras.append(String.format("%s{\"key\":\"%s\", \"value\":%s}",
+                            extras.length() > EMPTY_JSON_LENGTH ? "," : "", "publisher_email", makeJsonFriendly(foafMbox)));
                 String foafHomePage = getObjectValue(model, agent, FOAF.homepage);
                 if (foafHomePage != null)
-                    extras.append(String.format("%s{\"key\":\"%s\", \"value\":\"%s\"}",
-                            extras.length() > EMPTY_JSON_LENGTH ? "," : "", "publisher_url", foafHomePage.replace("\"", "\\\"")));
+                    extras.append(String.format("%s{\"key\":\"%s\", \"value\":%s}",
+                            extras.length() > EMPTY_JSON_LENGTH ? "," : "", "publisher_url", makeJsonFriendly(foafHomePage)));
                 String dctType = getObjectValue(model, agent, DCTerms.type);
                 if (dctType != null)
-                    extras.append(String.format("%s{\"key\":\"%s\", \"value\":\"%s\"}",
-                            extras.length() > EMPTY_JSON_LENGTH ? "," : "", "publisher_type", dctType.replace("\"", "\\\"")));
+                    extras.append(String.format("%s{\"key\":\"%s\", \"value\":%s}",
+                            extras.length() > EMPTY_JSON_LENGTH ? "," : "", "publisher_type", makeJsonFriendly(dctType)));
             }
         }
     }
@@ -484,35 +501,35 @@ public class JenaModelToDcatJsonConverter {
     private void setStringValue(Model model, Resource subject, StringBuilder json, Property property, String key) {
         String value = getObjectValue(model, subject, property);
         if (value != null)
-            json.append(String.format("%s\"%s\":\"%s\"", json.length() > EMPTY_JSON_LENGTH ? "," : "", key, value.replace("\"", "\\\"")));
+            json.append(String.format("%s\"%s\":%s", json.length() > EMPTY_JSON_LENGTH ? "," : "", key, makeJsonFriendly(value)));
     }
 
     private void setExtrasStringValue(Model model, Resource subject, StringBuilder extras, Property property, String key) {
         String value = getObjectValue(model, subject, property);
-        if (value != null) extras.append(String.format("%s{\"key\":\"%s\", \"value\":\"%s\"}",
-                extras.length() > EMPTY_JSON_LENGTH ? "," : "", key, value.replace("\"", "\\\"")));
+        if (value != null) extras.append(String.format("%s{\"key\":\"%s\", \"value\":%s}",
+                extras.length() > EMPTY_JSON_LENGTH ? "," : "", key, makeJsonFriendly(value)));
     }
 
     private String getOrCreateGroupJson(String theme) {
         if (this.groups.size() == 0) syncGroupsCache();
-        if (!this.groups.containsKey(theme)) createGroup(theme);
-        return groups.get(theme);
+        String adjustedNameForCkan = adjustNameForCkan(theme, 100);
+        if (!this.groups.containsKey(adjustedNameForCkan)) createGroup(theme, adjustedNameForCkan);
+        return groups.get(adjustedNameForCkan);
     }
 
-    private synchronized void createGroup(String theme) {
-        if (this.groups.containsKey(theme)) return;
+    private synchronized void createGroup(String theme, String adjustedNameForCkan) {
+        if (this.groups.containsKey(adjustedNameForCkan)) return;
         String apiUrl = CKAN_URL + "/api/3/action/group_create";
         List<NameValuePair> params = new ArrayList<>();
-        String groupName = theme.substring(0, Math.min(100, theme.length())).toLowerCase().replaceAll("[^a-z0-9_\\-]", "_");
-        params.add(new BasicNameValuePair("name", groupName));
+        params.add(new BasicNameValuePair("name", adjustedNameForCkan));
         params.add(new BasicNameValuePair("display_name", theme));
         params.add(new BasicNameValuePair("title", theme));
         try {
             JsonObject jobject = callPostCKAN(apiUrl, params);
             if (jobject.get("success").getAsBoolean()) {
                 Map<String, String> tmp = new HashMap<>();
-                tmp.put("name", groupName);
-                this.groups.put(theme, new Gson().toJson(tmp));
+                tmp.put("name", adjustedNameForCkan);
+                this.groups.put(adjustedNameForCkan, new Gson().toJson(tmp));
             } else {
                 throw new Exception("success is false");
             }
@@ -521,10 +538,14 @@ public class JenaModelToDcatJsonConverter {
         }
     }
 
+    private String adjustNameForCkan(String theme, int len) {
+        return theme.substring(0, Math.min(len, theme.length())).toLowerCase().replaceAll("[^a-z0-9_\\-]", "_");
+    }
+
     private synchronized void syncGroupsCache() {
         try {
             if (this.groups.size() != 0) return;
-            Map<String, String> tempGroups = new ConcurrentHashMap<>();
+            Map<String, String> tempGroups = new HashMap<>();
             String apiUrl = CKAN_URL + "/api/3/action/group_list";
             JsonObject jobject = getJsonObjectFromAPI(apiUrl);
             if (jobject.get("success").getAsBoolean()) {
@@ -535,7 +556,7 @@ public class JenaModelToDcatJsonConverter {
                     if (groupDisplayName != null) {
                         Map<String, String> tmp = new HashMap<>();
                         tmp.put("name", groupString);
-                        tempGroups.put(groupDisplayName, new Gson().toJson(tmp));
+                        tempGroups.put(groupString, new Gson().toJson(tmp));
                     }
                 }
                 this.groups = tempGroups;
@@ -572,14 +593,15 @@ public class JenaModelToDcatJsonConverter {
 
     private String getOrCreateTagJson(String keyword) {
         if (this.tags.size() == 0) syncTagsCache();
-        if (!this.tags.containsKey(keyword)) createTag(keyword);
-        return tags.get(keyword);
+        String adjustedNameForCkan = adjustNameForCkan(keyword, 100);
+        if (!this.tags.containsKey(adjustedNameForCkan)) createTag(keyword, adjustedNameForCkan);
+        return tags.get(adjustedNameForCkan);
     }
 
     private synchronized void syncTagsCache() {
         try {
             if (this.tags.size() != 0) return;
-            Map<String, String> tempTags = new ConcurrentHashMap<>();
+            Map<String, String> tempTags = new HashMap<>();
             String apiUrl = CKAN_URL + "/api/3/action/tag_list?vocabulary_id=" + this.vocabulary_id;
             JsonObject jobject = getJsonObjectFromAPI(apiUrl);
             if (jobject.get("success").getAsBoolean()) {
@@ -588,10 +610,10 @@ public class JenaModelToDcatJsonConverter {
                     String tagString = tag.getAsString();
                     String displayName = getTagDisplayName(tagString);
                     if (displayName != null) {
-                        Map<String, String> tmp = new ConcurrentHashMap<>();
+                        Map<String, String> tmp = new HashMap<>();
                         tmp.put("name", tagString);
                         tmp.put("vocabulary_id", this.vocabulary_id);
-                        tempTags.put(displayName, new Gson().toJson(tmp));
+                        tempTags.put(tagString, new Gson().toJson(tmp));
                     }
                 }
                 this.tags = tempTags;
@@ -613,13 +635,11 @@ public class JenaModelToDcatJsonConverter {
         return null;
     }
 
-    private synchronized void createTag(String keyword) {
-        if (this.tags.containsKey(keyword)) return;
+    private synchronized void createTag(String keyword, String adjustedNameForCkan) {
+        if (this.tags.containsKey(adjustedNameForCkan)) return;
         String apiUrl = CKAN_URL + "/api/3/action/tag_create";
         List<NameValuePair> params = new ArrayList<>();
-        String tagName = keyword.substring(0, Math.min(100, keyword.length())).toLowerCase()
-                .replaceAll("[^a-z0-9_\\-]", "_");
-        params.add(new BasicNameValuePair("name", tagName));
+        params.add(new BasicNameValuePair("name", adjustedNameForCkan));
         params.add(new BasicNameValuePair("display_name", keyword));
         params.add(new BasicNameValuePair("vocabulary_id", this.vocabulary_id));
 
@@ -627,14 +647,14 @@ public class JenaModelToDcatJsonConverter {
             JsonObject jobject = callPostCKAN(apiUrl, params);
             if (jobject.get("success").getAsBoolean()) {
                 Map<String, String> tmp = new HashMap<>();
-                tmp.put("name", tagName);
+                tmp.put("name", adjustedNameForCkan);
                 tmp.put("vocabulary_id", this.vocabulary_id);
-                this.tags.put(keyword, new Gson().toJson(tmp));
+                this.tags.put(adjustedNameForCkan, new Gson().toJson(tmp));
             } else {
                 throw new Exception("success is false");
             }
         } catch (Exception ex) {
-            logger.error("Exception in createTag", ex);
+            logger.error("Exception in createTag {}, {}", keyword, ex);
         }
     }
 
