@@ -25,6 +25,7 @@ import org.springframework.retry.annotation.Retryable;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
 import java.nio.charset.StandardCharsets;
 
 @Component
@@ -34,14 +35,20 @@ public class TripleStoreWriter implements CredentialsProvider {
 
     private static final Logger logger = LoggerFactory.getLogger(TripleStoreWriter.class);
 
-    @Value("${civetTripleStore.url}")
+
+    @Value("${info.opal.tripleStore.url}")
     private String tripleStoreURL;
+    @Value("${info.opal.tripleStore.username}")
+    private String tripleStoreUsername;
+    @Value("${info.opal.tripleStore.password}")
+    private String tripleStorePassword;
 
-    org.apache.http.impl.client.CloseableHttpClient client;
+    private org.apache.http.impl.client.CloseableHttpClient client;
+    private org.apache.http.auth.Credentials credentials;
 
-
-    public TripleStoreWriter() {
-        this.credentials = new UsernamePasswordCredentials("dba", "dba");
+    @PostConstruct
+    public void initialize() {
+        this.credentials = new UsernamePasswordCredentials(tripleStoreUsername, tripleStorePassword);
         HttpClientBuilder clientBuilder = HttpClientBuilder.create();
         clientBuilder.setDefaultCredentialsProvider(this);
         client = clientBuilder.build();
@@ -88,8 +95,6 @@ public class TripleStoreWriter implements CredentialsProvider {
             return bytes;
         return null;
     }
-
-    private org.apache.http.auth.Credentials credentials;
 
     private boolean runWriteQuery(StringBuilder triples, QuerySolutionMap mp) {
         try {

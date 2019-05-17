@@ -36,11 +36,11 @@ public class DataSetFetcher implements CredentialsProvider {
 
 
     private org.aksw.jena_sparql_api.core.QueryExecutionFactory qef;
-    @Value("${tripleStore.url}")
+    @Value("${info.crawler.tripleStore.url}")
     private String tripleStoreURL;
-    @Value("${tripleStore.username}")
+    @Value("${info.crawler.tripleStore.username}")
     private String tripleStoreUsername;
-    @Value("${tripleStore.password}")
+    @Value("${info.crawler.tripleStore.password}")
     private String tripleStorePassword;
 
     @Value("${info.portals}")

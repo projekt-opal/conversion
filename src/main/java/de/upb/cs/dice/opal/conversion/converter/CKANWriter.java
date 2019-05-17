@@ -23,11 +23,11 @@ public class CKANWriter {
     private final QualityMetricsConfiguration qualityMetricsConfiguration;
     private final CKAN_Config ckanConfig;
 
-    @Value("${ckan.url}")
+    @Value("${info.ckan.url}")
     private String CKAN_URL;
 //    @Value("${ckan.api_key}")
 //    private String API_KEY;
-    @Value("${duplicateName.appendNumber}")
+    @Value("${info.duplicateName.appendNumber}")
     private boolean appendNumber;
 
     @Autowired
