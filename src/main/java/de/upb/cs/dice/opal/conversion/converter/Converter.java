@@ -1,5 +1,6 @@
 package de.upb.cs.dice.opal.conversion.converter;
 
+import de.upb.cs.dice.opal.conversion.utility.RDFUtility;
 import org.apache.jena.rdf.model.*;
 import org.apache.jena.rdf.model.impl.SelectorImpl;
 import org.apache.jena.rdf.model.impl.StatementImpl;
@@ -7,7 +8,7 @@ import org.apache.jena.vocabulary.DCAT;
 import org.apache.jena.vocabulary.RDF;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.jms.annotation.JmsListener;
+import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.stereotype.Component;
 
@@ -19,7 +20,7 @@ public class Converter {
 
     private static final Logger logger = LoggerFactory.getLogger(Converter.class);
 
-    @JmsListener(destination = "conversionQueue", containerFactory = "messageFactory")
+    @RabbitListener(queues = "conversionQueue")
     @SendTo("civetQueue")
     public byte[] convert(byte[] bytes) {
         try {
@@ -45,9 +46,7 @@ public class Converter {
                 model.remove(stmtIterator);
 
 
-                byte[] serialize = RDFUtility.serialize(model);
-                return serialize;
-//                jmsTemplate.convertAndSend("civetQueue", serialize);
+                return RDFUtility.serialize(model);
             }
 
         } catch (Exception e) {

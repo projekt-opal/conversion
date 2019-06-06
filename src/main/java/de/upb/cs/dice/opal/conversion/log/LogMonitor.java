@@ -1,4 +1,4 @@
-package de.upb.cs.dice.opal.conversion.converter;
+package de.upb.cs.dice.opal.conversion.log;
 
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.After;

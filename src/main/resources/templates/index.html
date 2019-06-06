@@ -1,10 +1,43 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
-    <meta charset="UTF-8" />
+    <meta charset="UTF-8"/>
     <title>Conversion-Tool</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 </head>
 <body>
-<h3>It works!</h3>
+<div class="row">
+    <div class="col-lg-5">
+        <table class="table">
+            <thead>
+            <tr>
+                <th>convert</th>
+                <th>name</th>
+                <th>Last not fetched</th>
+                <th>high</th>
+            </tr>
+            </thead>
+            <tbody>
+            <!--/*@thymesVar id="portals" type="java.util.Iterator<de.upb.cs.dice.opal.conversion.model.Portal>"*/-->
+            <div th:each="portal:${portals}">
+                <tr>
+                    <td><i class="fa fa-play" aria-hidden="true"
+                           th:onclick="'javascript:getState(\''+
+                                    ${portal.name} + '\',\'' + ${portal.lastNotFetched} + '\',\'' + ${portal.high} +
+                                    '\');'"></i></td>
+                    <td><p th:text="${portal.name}">name</p></td>
+                    <td><p th:text="${portal.lastNotFetched}">0</p></td>
+                    <td><p th:text="${portal.high}">-1</p></td>
+                </tr>
+            </div>
+            </tbody>
+        </table>
+
+        <script th:src="@{/js/opal/getState.js}"></script>
+
+    </div>
+</div>
+
 </body>
 </html>

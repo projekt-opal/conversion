@@ -1,4 +1,4 @@
-package de.upb.cs.dice.opal.conversion.converter;
+package de.upb.cs.dice.opal.conversion.utility;
 
 import com.google.gson.*;
 import org.apache.http.NameValuePair;

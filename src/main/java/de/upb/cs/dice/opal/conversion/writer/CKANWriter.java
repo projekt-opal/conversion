@@ -1,16 +1,19 @@
-package de.upb.cs.dice.opal.conversion.converter;
+package de.upb.cs.dice.opal.conversion.writer;
 
 
+import de.upb.cs.dice.opal.conversion.config.CKAN_Config;
+import de.upb.cs.dice.opal.conversion.config.QualityMetricsConfiguration;
+import de.upb.cs.dice.opal.conversion.utility.JenaModelToDcatJsonConverter;
+import de.upb.cs.dice.opal.conversion.utility.RDFUtility;
 import org.apache.jena.rdf.model.*;
 import org.dice_research.opal.common.vocabulary.Dqv;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.jms.annotation.JmsListener;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import java.util.AbstractMap;
 
 @Component
@@ -25,7 +28,7 @@ public class CKANWriter {
 
     @Value("${info.ckan.url}")
     private String CKAN_URL;
-//    @Value("${ckan.api_key}")
+    //    @Value("${ckan.api_key}")
 //    private String API_KEY;
     @Value("${info.duplicateName.appendNumber}")
     private boolean appendNumber;
@@ -42,15 +45,15 @@ public class CKANWriter {
 //    }
 
 
-    @JmsListener(destination = "ckanQueue", containerFactory = "messageFactory")
+    @RabbitListener(queues = "#{writerQueueCKAN}")
     public void dump(byte[] bytes) {
         try {
             if (bytes == null) return;
             Model model = RDFUtility.deserialize(bytes);
 
-            if(jenaModelToDcatJsonConverter == null) {
+            if (jenaModelToDcatJsonConverter == null) {
                 synchronized (this) {
-                    if(jenaModelToDcatJsonConverter == null)
+                    if (jenaModelToDcatJsonConverter == null)
                         jenaModelToDcatJsonConverter = new JenaModelToDcatJsonConverter(CKAN_URL, ckanConfig.getApiKey(), appendNumber);
                 }
             }

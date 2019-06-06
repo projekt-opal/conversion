@@ -1,5 +1,6 @@
-package de.upb.cs.dice.opal.conversion.converter;
+package de.upb.cs.dice.opal.conversion.writer;
 
+import de.upb.cs.dice.opal.conversion.utility.RDFUtility;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.Credentials;
 import org.apache.http.auth.UsernamePasswordCredentials;
@@ -16,9 +17,8 @@ import org.apache.jena.update.UpdateProcessor;
 import org.apache.jena.update.UpdateRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.jms.annotation.JmsListener;
-import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.EnableRetry;
 import org.springframework.retry.annotation.Retryable;
@@ -27,6 +27,8 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 @Component
 @EnableScheduling
@@ -46,6 +48,8 @@ public class TripleStoreWriter implements CredentialsProvider {
     private org.apache.http.impl.client.CloseableHttpClient client;
     private org.apache.http.auth.Credentials credentials;
 
+    private ExecutorService executorService = Executors.newFixedThreadPool(20);
+
     @PostConstruct
     public void initialize() {
         this.credentials = new UsernamePasswordCredentials(tripleStoreUsername, tripleStorePassword);
@@ -54,20 +58,24 @@ public class TripleStoreWriter implements CredentialsProvider {
         client = clientBuilder.build();
     }
 
-    @JmsListener(destination = "writerQueue", containerFactory = "messageFactory")
-    @SendTo("ckanQueue")
-    public byte[] writeToTripleStore(byte[] bytes) {
+    @RabbitListener(queues = "#{writerQueueTripleStore}")
+    public void writeToTripleStore(byte[] bytes) {
 
         // TODO: 12.12.18 find better way to get toString of RdfNodes
-        if (bytes == null) return null;
+        if (bytes == null) return;
+        Runnable runnable = () -> writeModel(bytes);
+        executorService.submit(runnable);
 
+    }
+
+    private void writeModel(byte[] bytes) {
         Model model = RDFUtility.deserialize(bytes);
         StmtIterator stmtIterator = model.listStatements();
         QuerySolutionMap mp = new QuerySolutionMap();
         int cnt = 0;
         StringBuilder triples = new StringBuilder();
         while (stmtIterator.hasNext()) {
-            if (cnt > 20) {
+            if (cnt > 50) {
                 runWriteQuery(triples, mp);
                 triples = new StringBuilder();
                 mp = new QuerySolutionMap();
@@ -90,11 +98,9 @@ public class TripleStoreWriter implements CredentialsProvider {
                     .append(p).append(' ')
                     .append(o).append(" . ");
         }
-
-        if (runWriteQuery(triples, mp))
-            return bytes;
-        return null;
+        runWriteQuery(triples, mp);
     }
+
 
     private boolean runWriteQuery(StringBuilder triples, QuerySolutionMap mp) {
         try {
@@ -112,7 +118,7 @@ public class TripleStoreWriter implements CredentialsProvider {
         return false;
     }
 
-    @Retryable(maxAttempts = 3, backoff = @Backoff(delay = 200))
+    @Retryable(maxAttempts = 3, backoff = @Backoff(delay = 2000))
     private void runInsertQuery(String query) {
         UpdateRequest request = UpdateFactory.create(query);
         UpdateProcessor proc = UpdateExecutionFactory.createRemoteForm(request, tripleStoreURL, client);

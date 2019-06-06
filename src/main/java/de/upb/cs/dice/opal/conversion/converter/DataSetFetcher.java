@@ -1,6 +1,7 @@
 package de.upb.cs.dice.opal.conversion.converter;
 
 import com.google.common.collect.ImmutableMap;
+import de.upb.cs.dice.opal.conversion.utility.RDFUtility;
 import org.aksw.jena_sparql_api.http.QueryExecutionFactoryHttp;
 import org.aksw.jena_sparql_api.retry.core.QueryExecutionFactoryRetry;
 import org.apache.http.auth.AuthScope;
@@ -15,9 +16,9 @@ import org.apache.jena.query.ResultSet;
 import org.apache.jena.rdf.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.jms.core.JmsTemplate;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.EnableRetry;
 import org.springframework.retry.annotation.Retryable;
@@ -55,11 +56,13 @@ public class DataSetFetcher implements CredentialsProvider {
             .put("dct", "http://purl.org/dc/terms/")
             .build();
 
-    private final JmsTemplate jmsTemplate;
+
+    private final RabbitTemplate rabbitTemplate;
 
     @Autowired
-    public DataSetFetcher(JmsTemplate jmsTemplate) {
-        this.jmsTemplate = jmsTemplate;
+    public DataSetFetcher(RabbitTemplate rabbitTemplate) {
+
+        this.rabbitTemplate = rabbitTemplate;
     }
 
     private void initialQueryExecutionFactory(String portal) {
@@ -112,6 +115,11 @@ public class DataSetFetcher implements CredentialsProvider {
             }
 
             for (int idx = 0; idx < totalNumberOfDataSets; idx += PAGE_SIZE) {
+                if(idx > 0 && idx % 50000 == 0) {
+                    try {
+                        Thread.sleep(1000000); //manual waits for 1000 seconds for not reaching memory problem
+                    } catch (InterruptedException ignored) {}
+                }
                 logger.info("Getting list datasets  {} : {}", idx, idx + PAGE_SIZE);
                 List<Resource> listOfDataSets = getListOfDataSets(idx, (int) Math.min(PAGE_SIZE, totalNumberOfDataSets - idx));
                 listOfDataSets
@@ -139,7 +147,7 @@ public class DataSetFetcher implements CredentialsProvider {
         dataSetGraph.add(dataSet, opalTemporalCatalogProperty, portalResource);
         byte[] bytes = RDFUtility.serialize(dataSetGraph);
         //enqueue charge response to activemq to
-        jmsTemplate.convertAndSend("conversionQueue", bytes);
+        rabbitTemplate.convertAndSend("conversionQueue", bytes);
     }
 
     /**

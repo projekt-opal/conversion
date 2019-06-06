@@ -1,4 +1,4 @@
-package de.upb.cs.dice.opal.conversion.converter;
+package de.upb.cs.dice.opal.conversion.utility;
 
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;

@@ -1,4 +1,4 @@
-package de.upb.cs.dice.opal.conversion.converter;
+package de.upb.cs.dice.opal.conversion.config;
 
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
