@@ -1,8 +1,9 @@
 package de.upb.cs.dice.opal.conversion.writer;
 
 
-import de.upb.cs.dice.opal.conversion.config.CKAN_Config;
 import de.upb.cs.dice.opal.conversion.config.QualityMetricsConfiguration;
+import de.upb.cs.dice.opal.conversion.model.Ckan;
+import de.upb.cs.dice.opal.conversion.repository.CkanRepository;
 import de.upb.cs.dice.opal.conversion.utility.JenaModelToDcatJsonConverter;
 import de.upb.cs.dice.opal.conversion.utility.RDFUtility;
 import org.apache.jena.rdf.model.*;
@@ -15,6 +16,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.util.AbstractMap;
+import java.util.Optional;
 
 @Component
 public class CKANWriter {
@@ -24,25 +26,19 @@ public class CKANWriter {
     private JenaModelToDcatJsonConverter jenaModelToDcatJsonConverter;
 
     private final QualityMetricsConfiguration qualityMetricsConfiguration;
-    private final CKAN_Config ckanConfig;
+    private final CkanRepository ckanRepository;
 
     @Value("${info.ckan.url}")
     private String CKAN_URL;
-    //    @Value("${ckan.api_key}")
-//    private String API_KEY;
+
     @Value("${info.duplicateName.appendNumber}")
     private boolean appendNumber;
 
     @Autowired
-    public CKANWriter(QualityMetricsConfiguration qualityMetricsConfiguration, CKAN_Config ckanConfig) {
+    public CKANWriter(QualityMetricsConfiguration qualityMetricsConfiguration, CkanRepository ckanRepository) {
         this.qualityMetricsConfiguration = qualityMetricsConfiguration;
-        this.ckanConfig = ckanConfig;
+        this.ckanRepository = ckanRepository;
     }
-
-//    @PostConstruct
-//    public void initialize() {
-//        jenaModelToDcatJsonConverter = new JenaModelToDcatJsonConverter(CKAN_URL, ckanConfig.getApiKey(), appendNumber);
-//    }
 
 
     @RabbitListener(queues = "#{writerQueueCKAN}")
@@ -53,8 +49,11 @@ public class CKANWriter {
 
             if (jenaModelToDcatJsonConverter == null) {
                 synchronized (this) {
+                    Optional<Ckan> ckan = ckanRepository.findById(1);
+                    if (!ckan.isPresent()) return;
                     if (jenaModelToDcatJsonConverter == null)
-                        jenaModelToDcatJsonConverter = new JenaModelToDcatJsonConverter(CKAN_URL, ckanConfig.getApiKey(), appendNumber);
+                        jenaModelToDcatJsonConverter =
+                                new JenaModelToDcatJsonConverter(CKAN_URL, ckan.get().getApiKey(), appendNumber);
                 }
             }
 
@@ -77,7 +76,6 @@ public class CKANWriter {
 
     private void addQualityMetrics(StringBuilder extras, Model model) {
         qualityMetricsConfiguration.getMeasurementResource().forEach((key, resource) -> {
-//            NodeIterator nodeIterator = model.listObjectsOfProperty(measurementProperty);
             ResIterator resIterator =
                     model.listResourcesWithProperty(Dqv.IS_MEASUREMENT_OF, ResourceFactory.createResource(resource));
             if (resIterator.hasNext()) {
