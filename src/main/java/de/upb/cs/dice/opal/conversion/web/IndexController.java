@@ -26,6 +26,18 @@ public class IndexController {
         this.fetchersForPortals = fetchersForPortals;
     }
 
+    @GetMapping("/")
+    public String index(Model model) {
+        Iterable<Portal> portals = portalRepository.findAll();
+        model.addAttribute("portals", portals);
+        Iterable<Ckan> all = ckanRepository.findAll();
+        if (all.iterator().hasNext()) {
+            Ckan ckan = all.iterator().next();
+            model.addAttribute("apiKey", ckan.getApiKey());
+        }
+        return "index";
+    }
+
     @GetMapping("/convert")
     public String convert(
             @RequestParam(name = "portalName", required = false) String portalName,
@@ -41,25 +53,30 @@ public class IndexController {
             }
         } else ckanRepository.save(new Ckan().setApiKey(apiKey));
 
-        System.out.println(portalName + "," + lnf + "," + high + "," + apiKey);
-
         if(portalName != null && !portalName.isEmpty()) {
             DataSetFetcher fetcher = fetchersForPortals.getFetcher(portalName);
-            fetcher.fetch(portalName, Integer.valueOf(lnf), Integer.valueOf(high));
+            fetcher.setPortalName(portalName);
+            fetcher.setCanceled(false);
+            int x = Integer.valueOf(lnf);
+            int y = Integer.valueOf(high);
+            Portal portal = portalRepository.findByName(portalName);
+            portal.setLastNotFetched(x);
+            portal.setHigh(y);
+            portalRepository.save(portal);
+
+            new Thread(fetcher).start();
         }
         return "redirect:/";
     }
 
-    @GetMapping("/")
-    public String index(Model model) {
-        Iterable<Portal> portals = portalRepository.findAll();
-        model.addAttribute("portals", portals);
-        Iterable<Ckan> all = ckanRepository.findAll();
-        if (all.iterator().hasNext()) {
-            Ckan ckan = all.iterator().next();
-            model.addAttribute("apiKey", ckan.getApiKey());
+    @GetMapping("/cancel")
+    public String convert(@RequestParam(name = "portalName", required = false) String portalName) {
+        if(portalName != null && !portalName.isEmpty()) {
+            DataSetFetcher fetcher = fetchersForPortals.getFetcher(portalName);
+            fetcher.setCanceled(true);
         }
-        return "index";
+        return "redirect:/";
     }
+
 
 }

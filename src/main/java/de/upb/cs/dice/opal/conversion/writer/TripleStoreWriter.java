@@ -48,7 +48,7 @@ public class TripleStoreWriter implements CredentialsProvider {
     private org.apache.http.impl.client.CloseableHttpClient client;
     private org.apache.http.auth.Credentials credentials;
 
-    private ExecutorService executorService = Executors.newFixedThreadPool(20);
+//    private ExecutorService executorService = Executors.newFixedThreadPool(20);
 
     @PostConstruct
     public void initialize() {
@@ -63,9 +63,9 @@ public class TripleStoreWriter implements CredentialsProvider {
 
         // TODO: 12.12.18 find better way to get toString of RdfNodes
         if (bytes == null) return;
-        Runnable runnable = () -> writeModel(bytes);
-        executorService.submit(runnable);
-
+//        Runnable runnable = () -> writeModel(bytes);
+//        executorService.submit(runnable);
+        writeModel(bytes);
     }
 
     private void writeModel(byte[] bytes) {
@@ -118,7 +118,7 @@ public class TripleStoreWriter implements CredentialsProvider {
         return false;
     }
 
-    @Retryable(maxAttempts = 3, backoff = @Backoff(delay = 2000))
+    @Retryable(maxAttempts = 2, backoff = @Backoff(delay = 10000))
     private void runInsertQuery(String query) {
         UpdateRequest request = UpdateFactory.create(query);
         UpdateProcessor proc = UpdateExecutionFactory.createRemoteForm(request, tripleStoreURL, client);

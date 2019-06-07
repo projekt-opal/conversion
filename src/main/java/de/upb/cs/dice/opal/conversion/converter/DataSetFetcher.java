@@ -1,6 +1,8 @@
 package de.upb.cs.dice.opal.conversion.converter;
 
 import com.google.common.collect.ImmutableMap;
+import de.upb.cs.dice.opal.conversion.model.Portal;
+import de.upb.cs.dice.opal.conversion.repository.PortalRepository;
 import de.upb.cs.dice.opal.conversion.utility.RDFUtility;
 import org.aksw.jena_sparql_api.http.QueryExecutionFactoryHttp;
 import org.aksw.jena_sparql_api.retry.core.QueryExecutionFactoryRetry;
@@ -31,14 +33,14 @@ import java.util.List;
 @Component
 @Scope("prototype")
 @EnableRetry
-public class DataSetFetcher implements CredentialsProvider {
+public class DataSetFetcher implements CredentialsProvider, Runnable {
     private static final Logger logger = LoggerFactory.getLogger(DataSetFetcher.class);
 
     static final Property opalTemporalCatalogProperty =
             ResourceFactory.createProperty("http://projekt-opal.de/catalog");
-
-
     private org.aksw.jena_sparql_api.core.QueryExecutionFactory qef;
+    private boolean isCanceled;
+
     @Value("${info.crawler.tripleStore.url}")
     private String tripleStoreURL;
     @Value("${info.crawler.tripleStore.username}")
@@ -46,12 +48,9 @@ public class DataSetFetcher implements CredentialsProvider {
     @Value("${info.crawler.tripleStore.password}")
     private String tripleStorePassword;
 
-    @Value("${info.portals}")
-    private String[] portals;
-
     private org.apache.http.auth.Credentials credentials;
 
-    private static final int PAGE_SIZE = 1000;
+    private static final int PAGE_SIZE = 100;
 
     private static final ImmutableMap<String, String> PREFIXES = ImmutableMap.<String, String>builder()
             .put("dcat", "http://www.w3.org/ns/dcat#")
@@ -60,11 +59,74 @@ public class DataSetFetcher implements CredentialsProvider {
 
 
     private final RabbitTemplate rabbitTemplate;
+    private final PortalRepository portalRepository;
+    private String portalName;
 
     @Autowired
-    public DataSetFetcher(RabbitTemplate rabbitTemplate) {
-
+    public DataSetFetcher(RabbitTemplate rabbitTemplate, PortalRepository portalRepository) {
         this.rabbitTemplate = rabbitTemplate;
+        this.portalRepository = portalRepository;
+    }
+
+    public void run() {
+        try {
+            logger.info("Starting fetching portal {}", portalName);
+            initialQueryExecutionFactory(portalName);
+
+            Resource portalResource = ResourceFactory.createResource("http://projekt-opal.de/catalog/" + portalName);
+
+            int totalNumberOfDataSets = getTotalNumberOfDataSets();
+            logger.debug("Total number of datasets is {}", totalNumberOfDataSets);
+            if (totalNumberOfDataSets == -1) {
+                throw new Exception("Cannot Query the TripleStore");
+            }
+            Portal portal = portalRepository.findByName(portalName);
+            int high = portal.getHigh();
+            int lnf = portal.getLastNotFetched();
+
+            if(high == -1 || high > totalNumberOfDataSets) {
+                high = totalNumberOfDataSets;
+            }
+
+            portal.setHigh(high);
+            portalRepository.save(portal);
+
+            for (int idx = lnf; idx < high; idx += PAGE_SIZE) {
+                if(isCanceled) {
+                    logger.info("fetching portal {} is cancelled", portalName);
+                    return;
+                }
+                if(idx > 0 && idx % 100000 == 0) {
+                    try {
+                        Thread.sleep(1000000); //manual waits for 1000 seconds for not reaching memory problem
+                    } catch (InterruptedException ignored) {}
+                }
+                portal.setLastNotFetched(idx);
+                portalRepository.save(portal);
+
+                int min = Math.min(PAGE_SIZE, high - idx);
+                logger.info("Getting list datasets  {} : {}", idx, idx + min);
+                List<Resource> listOfDataSets = getListOfDataSets(idx, min);
+                listOfDataSets
+//                        .subList(1,2) //only for debug
+                        .parallelStream()
+                        .forEach(dataSet -> {
+                            logger.trace("Getting graph of {}", dataSet);
+                            try {
+                                getGraphAndConvert(portalResource, dataSet);
+                            } catch (Exception e) {
+                                logger.error("An error occurred in getting graph and converting of it for {} {}", dataSet, e);
+                            }
+                        });
+            }
+            portal.setLastNotFetched(high);
+            portalRepository.save(portal);
+
+
+            logger.info("fetching portal {} finished", portalName);
+        } catch (Exception e) {
+            logger.error("An Error occurred in converting portal {}, {}", portalName, e);
+        }
     }
 
     private void initialQueryExecutionFactory(String portal) {
@@ -80,49 +142,6 @@ public class DataSetFetcher implements CredentialsProvider {
                 new org.apache.jena.sparql.core.DatasetDescription(), client);
         qef = new QueryExecutionFactoryRetry(qef, 5, 1000);
 
-    }
-
-    public void fetch(String portalName, int lnf, int high) {
-        try {
-            logger.info("Starting fetching portal {}", portalName);
-            initialQueryExecutionFactory(portalName);
-
-            Resource portalResource = ResourceFactory.createResource("http://projekt-opal.de/catalog/" + portalName);
-
-            int totalNumberOfDataSets = getTotalNumberOfDataSets();
-            logger.debug("Total number of datasets is {}", totalNumberOfDataSets);
-            if (totalNumberOfDataSets == -1) {
-                throw new Exception("Cannot Query the TripleStore");
-            }
-
-            if(high == -1 || high > totalNumberOfDataSets)
-                high = totalNumberOfDataSets;
-
-            for (int idx = lnf; idx < high; idx += PAGE_SIZE) {
-                if(idx > 0 && idx % 100000 == 0) {
-                    try {
-                        Thread.sleep(1000000); //manual waits for 1000 seconds for not reaching memory problem
-                    } catch (InterruptedException ignored) {}
-                }
-                logger.info("Getting list datasets  {} : {}", idx, idx + PAGE_SIZE);
-                List<Resource> listOfDataSets = getListOfDataSets(idx, (int) Math.min(PAGE_SIZE, high - idx));
-                listOfDataSets
-//                        .subList(1,2) //only for debug
-                        .parallelStream()
-                        .forEach(dataSet -> {
-                            logger.trace("Getting graph of {}", dataSet);
-                            try {
-                                getGraphAndConvert(portalResource, dataSet);
-                            } catch (Exception e) {
-                                logger.error("An error occurred in getting graph and converting of it for ", dataSet, e);
-                            }
-                        });
-            }
-
-            logger.info("fetching portal {} finished", portalName);
-        } catch (Exception e) {
-            logger.error("An Error occurred in converting portal {}, {}", portalName, e);
-        }
     }
 
     @Retryable(maxAttempts = 5, backoff = @Backoff(delay = 1000))
@@ -225,6 +244,11 @@ public class DataSetFetcher implements CredentialsProvider {
     }
 
 
+    public DataSetFetcher setPortalName(String portalName) {
+        this.portalName = portalName;
+        return this;
+    }
+
     private int getCount(ParameterizedSparqlString pss) {
         int cnt = -1;
         try (QueryExecution queryExecution = qef.createQueryExecution(pss.asQuery())) {
@@ -253,5 +277,10 @@ public class DataSetFetcher implements CredentialsProvider {
     @Override
     public void clear() {
 
+    }
+
+    public DataSetFetcher setCanceled(boolean canceled) {
+        isCanceled = canceled;
+        return this;
     }
 }

@@ -207,7 +207,9 @@ public class JenaModelToDcatJsonConverter {
                         if (licenseNode.isResource()) {
                             Resource license = licenseNode.asResource();
                             dict.append(String.format("%s\"%s\":\"%s\"", dict.length() > EMPTY_JSON_LENGTH ? "," : "", "license", license.getURI()));
-                            String license_id = license_uri2id.get(license.getURI());
+                            String license_id = null;
+                            if(license.getURI() != null)
+                                 license_id = license_uri2id.get(license.getURI());
                             if (license_id == null) {
                                 String licenseTitle = getObjectValue(model, license, DCTerms.title);
                                 if (licenseTitle != null)
@@ -246,7 +248,7 @@ public class JenaModelToDcatJsonConverter {
             }
         }
         if (resources.size() > 0)
-            json.append(String.format("%s\"%s\":%s", json.length() > EMPTY_JSON_LENGTH ? "," : "", "resources", getArrayJsonValue(resources)));
+            json.append(String.format("%s\"%s\":%s", json.length() > EMPTY_JSON_LENGTH ? "," : "", "resources", getArrayJsonValue(resources, false)));
     }
 
     private void setChecksum(Model model, Resource distribution, StringBuilder dict) {
@@ -345,7 +347,8 @@ public class JenaModelToDcatJsonConverter {
         if (themes.size() > 0) {
             List<String> groupsJson = new ArrayList<>();
             for (String theme : themes) groupsJson.add(getOrCreateGroupJson(theme));
-            json.append(String.format("%s\"%s\":%s", json.length() > EMPTY_JSON_LENGTH ? "," : "", "groups", getArrayJsonValue(groupsJson)));
+            json.append(String.format("%s\"%s\":%s",
+                    json.length() > EMPTY_JSON_LENGTH ? "," : "", "groups", getArrayJsonValue(groupsJson, false)));
         }
     }
 
@@ -361,16 +364,20 @@ public class JenaModelToDcatJsonConverter {
                 }
             }
             for (String keyword : keywords) tagsJson.add(getOrCreateTagJson(keyword));
-            json.append(String.format("%s\"%s\":%s", json.length() > EMPTY_JSON_LENGTH ? "," : "", "tags", getArrayJsonValue(tagsJson)));
+            json.append(String.format("%s\"%s\":%s",
+                    json.length() > EMPTY_JSON_LENGTH ? "," : "", "tags", getArrayJsonValue(tagsJson, false)));
         }
     }
 
-    private StringBuilder getArrayJsonValue(List<String> jsonValues) {
+    private StringBuilder getArrayJsonValue(List<String> jsonValues, boolean wrapString) {
         StringBuilder arrayJasonValue = new StringBuilder();
         arrayJasonValue.append("[");
         for (int i = 0; i < jsonValues.size(); i++) {
             if (i > 0) arrayJasonValue.append(",");
-            arrayJasonValue.append(jsonValues.get(i));
+            if(!wrapString)
+                arrayJasonValue.append(jsonValues.get(i));
+            else
+                arrayJasonValue.append("\"").append(jsonValues.get(i)).append("\"");
         }
         arrayJasonValue.append("]");
         return arrayJasonValue;
@@ -488,14 +495,14 @@ public class JenaModelToDcatJsonConverter {
         List<String> values = getObjectValueList(model, subject, property);
         if (values.size() > 0)
             extras.append(String.format("%s{\"key\":\"%s\", \"value\":%s}",
-                    extras.length() > EMPTY_JSON_LENGTH ? "," : "", key, getArrayJsonValue(values)));
+                    extras.length() > EMPTY_JSON_LENGTH ? "," : "", key, getArrayJsonValue(values, true)));
     }
 
     private void setListValues(Model model, Resource subject, StringBuilder json, Property property, String key) {
         List<String> values = getObjectValueList(model, subject, property);
         if (values.size() > 0)
-            json.append(String.format("%s\"%s\":%s}",
-                    json.length() > EMPTY_JSON_LENGTH ? "," : "", key, getArrayJsonValue(values)));
+            json.append(String.format("%s\"%s\":%s",
+                    json.length() > EMPTY_JSON_LENGTH ? "," : "", key, getArrayJsonValue(values, true)));
     }
 
     private void setStringValue(Model model, Resource subject, StringBuilder json, Property property, String key) {
@@ -583,8 +590,10 @@ public class JenaModelToDcatJsonConverter {
         while (nodeIterator.hasNext()) {
             RDFNode rdfNode = nodeIterator.nextNode();
             if (rdfNode.isResource()) {
-                String[] split = rdfNode.asResource().getURI().split("/");
-                ret.add(split[split.length - 1]);
+                try {
+                    String[] split = rdfNode.asResource().getURI().split("/");
+                    ret.add(split[split.length - 1]);
+                } catch (Exception ignored) {}
             } else
                 ret.add(rdfNode.asLiteral().getString());
         }
