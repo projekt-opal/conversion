@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Scope;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.EnableRetry;
 import org.springframework.retry.annotation.Retryable;
@@ -28,6 +29,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Component
+@Scope("prototype")
 @EnableRetry
 public class DataSetFetcher implements CredentialsProvider {
     private static final Logger logger = LoggerFactory.getLogger(DataSetFetcher.class);
@@ -80,48 +82,30 @@ public class DataSetFetcher implements CredentialsProvider {
 
     }
 
-//    @Scheduled(cron = "${info.dumper.scheduler}")
-//    public void scheduledDumping() {
-//        try {
-//            fetch();
-//        } catch (Exception e) {
-//            logger.error("{}", e);
-//        }
-//    }
-
-    public void fetch() {
-        try {
-            logger.info("Fetching started");
-
-            for (String portal : portals)
-                startFetchingOnePortal(portal);
-            logger.info("Fetching finished");
-        } catch (Exception e) {
-            logger.error("An Error occurred in converting portals. {}", e);
-        }
-    }
-
-    private void startFetchingOnePortal(String portalName) {
+    public void fetch(String portalName, int lnf, int high) {
         try {
             logger.info("Starting fetching portal {}", portalName);
             initialQueryExecutionFactory(portalName);
 
             Resource portalResource = ResourceFactory.createResource("http://projekt-opal.de/catalog/" + portalName);
 
-            long totalNumberOfDataSets = getTotalNumberOfDataSets();
+            int totalNumberOfDataSets = getTotalNumberOfDataSets();
             logger.debug("Total number of datasets is {}", totalNumberOfDataSets);
             if (totalNumberOfDataSets == -1) {
                 throw new Exception("Cannot Query the TripleStore");
             }
 
-            for (int idx = 0; idx < totalNumberOfDataSets; idx += PAGE_SIZE) {
-                if(idx > 0 && idx % 50000 == 0) {
+            if(high == -1 || high > totalNumberOfDataSets)
+                high = totalNumberOfDataSets;
+
+            for (int idx = lnf; idx < high; idx += PAGE_SIZE) {
+                if(idx > 0 && idx % 100000 == 0) {
                     try {
                         Thread.sleep(1000000); //manual waits for 1000 seconds for not reaching memory problem
                     } catch (InterruptedException ignored) {}
                 }
                 logger.info("Getting list datasets  {} : {}", idx, idx + PAGE_SIZE);
-                List<Resource> listOfDataSets = getListOfDataSets(idx, (int) Math.min(PAGE_SIZE, totalNumberOfDataSets - idx));
+                List<Resource> listOfDataSets = getListOfDataSets(idx, (int) Math.min(PAGE_SIZE, high - idx));
                 listOfDataSets
 //                        .subList(1,2) //only for debug
                         .parallelStream()
@@ -153,8 +137,8 @@ public class DataSetFetcher implements CredentialsProvider {
     /**
      * @return -1 => something went wrong, o.w. the number of distinct dataSets are return
      */
-    private long getTotalNumberOfDataSets() {
-        long cnt;
+    private int getTotalNumberOfDataSets() {
+        int cnt;
         ParameterizedSparqlString pss = new ParameterizedSparqlString("" +
                 "SELECT (COUNT(DISTINCT ?dataSet) AS ?num)\n" +
                 "WHERE { \n" +
@@ -241,14 +225,14 @@ public class DataSetFetcher implements CredentialsProvider {
     }
 
 
-    private long getCount(ParameterizedSparqlString pss) {
-        long cnt = -1;
+    private int getCount(ParameterizedSparqlString pss) {
+        int cnt = -1;
         try (QueryExecution queryExecution = qef.createQueryExecution(pss.asQuery())) {
             ResultSet resultSet = queryExecution.execSelect();
             while (resultSet.hasNext()) {
                 QuerySolution solution = resultSet.nextSolution();
                 RDFNode num = solution.get("num");
-                cnt = num.asLiteral().getLong();
+                cnt = num.asLiteral().getInt();
             }
         } catch (Exception ex) {
             logger.error("An error occurred in getting Count, {}", ex);

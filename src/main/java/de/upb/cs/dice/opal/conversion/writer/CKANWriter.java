@@ -49,11 +49,12 @@ public class CKANWriter {
 
             if (jenaModelToDcatJsonConverter == null) {
                 synchronized (this) {
-                    Optional<Ckan> ckan = ckanRepository.findById(1);
-                    if (!ckan.isPresent()) return;
+                    Iterable<Ckan> all = ckanRepository.findAll();
+                    if (!all.iterator().hasNext()) return;
+                    Ckan ckan = all.iterator().next();
                     if (jenaModelToDcatJsonConverter == null)
                         jenaModelToDcatJsonConverter =
-                                new JenaModelToDcatJsonConverter(CKAN_URL, ckan.get().getApiKey(), appendNumber);
+                                new JenaModelToDcatJsonConverter(CKAN_URL, ckan.getApiKey(), appendNumber);
                 }
             }
 

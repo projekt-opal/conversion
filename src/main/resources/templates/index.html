@@ -3,41 +3,56 @@
 <head>
     <meta charset="UTF-8"/>
     <title>Conversion-Tool</title>
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+          integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.0/jquery.min.js"></script>
+
 </head>
 <body>
-<div class="row">
-    <div class="col-lg-5">
-        <table class="table">
-            <thead>
-            <tr>
-                <th>convert</th>
-                <th>name</th>
-                <th>Last not fetched</th>
-                <th>high</th>
-            </tr>
-            </thead>
-            <tbody>
-            <!--/*@thymesVar id="portals" type="java.util.Iterator<de.upb.cs.dice.opal.conversion.model.Portal>"*/-->
-            <div th:each="portal:${portals}">
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-lg-5">
+            <table class="table">
+                <thead>
                 <tr>
-                    <td><i class="fa fa-play" aria-hidden="true"
-                           th:onclick="'javascript:getState(\''+
-                                    ${portal.name} + '\',\'' + ${portal.lastNotFetched} + '\',\'' + ${portal.high} +
-                                    '\');'"></i></td>
-                    <td><p th:text="${portal.name}">name</p></td>
-                    <td><p th:text="${portal.lastNotFetched}">0</p></td>
-                    <td><p th:text="${portal.high}">-1</p></td>
+                    <th>convert</th>
+                    <th>name</th>
+                    <th>Last not fetched</th>
+                    <th>high</th>
                 </tr>
-            </div>
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                <!--/*@thymesVar id="portals" type="java.util.Iterator<de.upb.cs.dice.opal.conversion.model.Portal>"*/-->
+                <div th:each="portal:${portals}">
+                    <tr>
+                        <td><i class="fa fa-play" aria-hidden="true"
+                               th:onclick="'javascript:getState(\''+
+                                    ${portal.name} +
+                                    '\');'"></i></td>
+                        <td><p th:text="${portal.name}">name</p></td>
+                        <td><input th:id="${portal.name} + '_lnf'" th:value="${portal.lastNotFetched}" /></td>
+                        <td><input th:id="${portal.name} + '_high'" th:value="${portal.high}" /></td>
+                    </tr>
+                </div>
+                </tbody>
+            </table>
+        </div>
+    </div>
 
-        <script th:src="@{/js/opal/getState.js}"></script>
-
+    <div class="row">
+        <div class="md-8">
+            <!--/*@thymesVar id="apiKey" type="java.lang.String"*/-->
+            <label>
+                <span>CKAN api key: </span>
+                <Input th:type="text" name="ckanApiKey" id="ckanApiKey" th:value="${apiKey}">
+            </label>
+        </div>
     </div>
 </div>
+
+<script th:src="@{/js/opal/getState.js}"></script>
 
 </body>
 </html>
